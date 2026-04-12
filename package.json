@@ -1,0 +1,23 @@
+{
+  "name": "demonator",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "crawler": "npm run -w @demonator/crawler",
+    "server": "npm run -w @demonator/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/archepro84/demonator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/archepro84/demonator/issues"
+  },
+  "homepage": "https://github.com/archepro84/demonator#readme"
+}
