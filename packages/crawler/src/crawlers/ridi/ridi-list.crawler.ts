@@ -3,18 +3,18 @@ import { sql } from 'kysely';
 import { db } from '../../database/kysely';
 
 export const RidiGenre = {
-  FANTASY: 'fantasy_serial',
-  ROMANCE_FANTASY: 'romance_fantasy_serial',
-  ROMANCE: 'romance_serial',
-  BL: 'bl-webnovel',
+  FANTASY: 'fantasy',
+  ROMANCE_FANTASY: 'romance_fantasy',
+  ROMANCE: 'romance',
+  BL: 'bl-novel',
 } as const;
 
 export type RidiGenre = (typeof RidiGenre)[keyof typeof RidiGenre];
 
 export const RidiOrder = {
-  DAILY: 'daily',
   WEEKLY: 'weekly',
   MONTHLY: 'monthly',
+  STEADY: 'steady',
 } as const;
 
 export type RidiOrder = (typeof RidiOrder)[keyof typeof RidiOrder];
@@ -36,7 +36,7 @@ export class RidiListCrawler extends BaseCrawler {
   private readonly baseUrl = 'https://ridibooks.com';
 
   buildUrl(options: RidiListCrawlOptions): string {
-    const { genre, page, order = RidiOrder.DAILY, adultExclude = true } = options;
+    const { genre, page, order = RidiOrder.STEADY, adultExclude = false } = options;
     const params = new URLSearchParams({
       order,
       adult_exclude: adultExclude ? 'y' : 'n',
@@ -84,7 +84,10 @@ export class RidiListCrawler extends BaseCrawler {
 
       return bsItems.map((item) => {
         const mainTitle = item.book.title?.main
-          ?.replace(/\s+\d+화.*$/, '')
+          ?.replace(/^개정판\s*\|\s*/, '')
+          .replace(/\s*세트\s*\(전\s*\d+권\)\s*$/, '')
+          .replace(/\s*\([^)]*(?:삽화본|증보판|개정판|완전판|합본)[^)]*\)/g, '')
+          .replace(/\s+(?:Part\s+\d+\s*:\s*)?(?:\d+부\s+)?\d+[권화]?\s*$/, '')
           .trim();
         const authorEntry = item.book.authors?.find(
           (a) => a.role === 'AUTHOR'

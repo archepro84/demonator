@@ -3,13 +3,22 @@ import { db } from '../../database/kysely';
 import type { ParsedWorkData } from '../../schemas/raw.schema';
 
 const NOISE_KEYWORDS = new Set([
-  'RIDI_ONLY', '리다무', '웹소설', '웹툰', '연재중',
+  // 플랫폼/포맷
+  'RIDI_ONLY', '리다무', '웹소설', '웹툰', '연재중', '연재완결',
+  '단행본', 'e북', '대여', '해외소설', '웹툰원작',
+  // 시점/서사 메타
+  '3인칭시점', '1인칭시점', '공시점', '수시점', '이야기중심',
+  // 출판 레이블
+  '할리킹',
+  // 페어링 메타
+  '서브공있음', '서브수있음', '다공일수', '여공남수',
 ]);
-const STAT_RE = /^(평점|리뷰|별점)\d+/;
+const NOISE_RE = /^(평점|리뷰|별점)\d+/;
+const PRICE_OR_VOLUME_RE = /^\d+%할인$|^\d+[만천]?원|^\d+~|^\d+권이상$/;
 
 export class RidiParser {
   async parseFromPage(page: Page): Promise<ParsedWorkData> {
-    const [title, coverImageUrl, author, description, keywords, introductionImages, episodeCount] =
+    const [title, coverImageUrl, author, description, keywords, introductionImages, volumeCount] =
       await Promise.all([
         this.extractTitle(page),
         this.metaContent(page, 'property', 'og:image'),
@@ -17,10 +26,10 @@ export class RidiParser {
         this.extractDescription(page),
         this.extractKeywords(page),
         this.extractIntroductionImages(page),
-        this.extractEpisodeCount(page),
+        this.extractVolumeCount(page),
       ]);
 
-    return { title, author, description, keywords, episodeCount, coverImageUrl, introductionImages };
+    return { title, author, description, keywords, volumeCount, coverImageUrl, introductionImages };
   }
 
   private async metaContent(page: Page, attr: string, value: string): Promise<string | undefined> {
@@ -32,7 +41,10 @@ export class RidiParser {
   private async extractTitle(page: Page): Promise<string> {
     const ogTitle = await this.metaContent(page, 'property', 'og:title');
     const raw = ogTitle ?? await page.title();
-    return raw.replace(/\s*-\s*리디.*$/, '').replace(/\s+\d+화$/, '').trim();
+    return raw
+      .replace(/\s*-\s*(?:리디|최신권|독점).*$/, '')
+      .replace(/\s+\d+[권화]?\s*$/, '')
+      .trim();
   }
 
   private async extractAuthor(page: Page): Promise<string | undefined> {
@@ -67,7 +79,7 @@ export class RidiParser {
     const tags: string[] = [];
     for (let i = 0; i < count; i++) {
       const label = await buttons.nth(i).getAttribute('aria-label');
-      if (label && !NOISE_KEYWORDS.has(label.trim()) && !STAT_RE.test(label.trim())) {
+      if (label && !NOISE_KEYWORDS.has(label.trim()) && !NOISE_RE.test(label.trim()) && !PRICE_OR_VOLUME_RE.test(label.trim())) {
         tags.push(label.trim());
       }
     }
@@ -94,13 +106,13 @@ export class RidiParser {
     return srcs;
   }
 
-  private async extractEpisodeCount(page: Page): Promise<number | undefined> {
+  private async extractVolumeCount(page: Page): Promise<number | undefined> {
     const headerText = await page.locator('#ISLANDS__Header').textContent().catch(() => null);
     if (headerText) {
-      const match = headerText.match(/총\s*([\d,]+)화/);
+      const match = headerText.match(/총\s*([\d,]+)권/);
       if (match) return parseInt(match[1].replace(/,/g, ''), 10);
     }
-    return undefined;
+    return 1;
   }
 
   async saveParseResult(rawPageId: number, externalId: string, data: ParsedWorkData): Promise<number> {
@@ -113,7 +125,7 @@ export class RidiParser {
         author: data.author ?? null,
         description: data.description ?? null,
         keywords: data.keywords.length > 0 ? data.keywords : null,
-        episode_count: data.episodeCount ?? null,
+        volume_count: data.volumeCount ?? null,
         cover_image_url: data.coverImageUrl ?? null,
         introduction_images:
           data.introductionImages.length > 0 ? data.introductionImages : null,

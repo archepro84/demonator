@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'dotenv/config';
 import { Command } from 'commander';
-import { RidiGenre, RidiOrder, RidiListCrawler } from './crawlers/ridi/ridi-list.crawler';
+import { RidiGenre, RidiOrder, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
 import { RidiCrawler } from './crawlers/ridi/ridi.crawler';
 import { RidiParser } from './crawlers/ridi/ridi.parser';
 import { ListValidator } from './validators/list-validator';
@@ -25,10 +25,11 @@ program
   .option(
     '-o, --order <order>',
     `Order (${Object.values(RidiOrder).join(', ')})`,
-    RidiOrder.MONTHLY
+    RidiOrder.STEADY
   )
   .option('-p, --page <page>', 'Page number', '1')
   .option('--pages <count>', 'Number of pages to crawl', '1')
+  .option('-l, --limit <count>', 'Limit total items per genre (max 60 per page)')
   .action(async (options) => {
     const allGenres = Object.values(RidiGenre) as string[];
     const validGenres = ['all', ...allGenres];
@@ -48,29 +49,41 @@ program
       : [options.genre as RidiGenre];
     const order = options.order as RidiOrder;
 
+    const ITEMS_PER_PAGE = 60;
+    const startPage = parseInt(options.page, 10);
+    const limit = options.limit ? parseInt(options.limit, 10) : undefined;
+    const pageCount = limit
+      ? Math.ceil(limit / ITEMS_PER_PAGE)
+      : parseInt(options.pages, 10);
+
     const crawler = new RidiListCrawler();
     await crawler.init();
 
     try {
-      const startPage = parseInt(options.page, 10);
-      const pageCount = parseInt(options.pages, 10);
-
       for (const genre of genres) {
         if (genres.length > 1) console.log(`\n=== Genre: ${genre} ===`);
+
+        let collected: ListItem[] = [];
 
         for (let i = 0; i < pageCount; i++) {
           const page = startPage + i;
           const result = await crawler.crawl({ genre, page, order });
-
           const items = crawler.parseListItems(result.html);
-          await crawler.saveToDb({ genre, page, order }, items);
+          collected = collected.concat(items);
 
-          console.log(`Page ${page}: Found ${items.length} items`);
+          if (limit && collected.length >= limit) break;
 
           if (i < pageCount - 1) {
             await new Promise((r) => setTimeout(r, 1000));
           }
         }
+
+        if (limit) {
+          collected = collected.slice(0, limit);
+        }
+
+        await crawler.saveToDb({ genre, page: startPage, order }, collected);
+        console.log(`Genre ${genre}: Saved ${collected.length} items`);
 
         if (genres.length > 1) {
           await new Promise((r) => setTimeout(r, 1000));

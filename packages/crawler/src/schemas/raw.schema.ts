@@ -32,7 +32,7 @@ export const RawWorkParseResultSchema = z.object({
   author: z.string().nullable(),
   description: z.string().nullable(),
   keywords: z.array(z.string()).nullable(),
-  episodeCount: z.number().nullable(),
+  volumeCount: z.number().nullable(),
   coverImageUrl: z.string().nullable(),
   introductionImages: z.array(z.string()).nullable(),
   parsedAt: z.date(),
@@ -44,7 +44,7 @@ export const ParsedWorkDataSchema = z.object({
   author: z.string().optional(),
   description: z.string().optional(),
   keywords: z.array(z.string()).default([]),
-  episodeCount: z.number().optional(),
+  volumeCount: z.number().optional(),
   coverImageUrl: z.string().optional(),
   introductionImages: z.array(z.string()).default([]),
 });
