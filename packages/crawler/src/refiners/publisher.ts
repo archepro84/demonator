@@ -44,15 +44,17 @@ export class Publisher {
   }
 
   async publishWork(parseResultId: number): Promise<PublishResult | null> {
+    // raw_work_parse_results에 external_id가 있고, platform은 raw_work_pages에서 가져옴
     const parseResult = await db
       .selectFrom('raw_work_parse_results')
       .innerJoin('raw_work_pages', 'raw_work_pages.id', 'raw_work_parse_results.raw_page_id')
       .select([
         'raw_work_parse_results.id as parse_id',
+        'raw_work_parse_results.external_id',
         'raw_work_parse_results.title',
         'raw_work_parse_results.author',
+        'raw_work_parse_results.cover_image_url',
         'raw_work_pages.platform',
-        'raw_work_pages.external_id',
       ])
       .where('raw_work_parse_results.id', '=', parseResultId)
       .executeTakeFirst();
@@ -62,6 +64,7 @@ export class Publisher {
       return null;
     }
 
+    // Extract and refine features
     const { runId } = await this.featureExtractor.extract(parseResultId);
     await this.featureRefiner.refine(runId);
     const acceptedFeatures = await this.featureRefiner.getAcceptedFeatures(runId);
@@ -83,6 +86,7 @@ export class Publisher {
         .set({
           title: parseResult.title,
           author: parseResult.author,
+          thumbnail_url: parseResult.cover_image_url,
           updated_at: new Date(),
         })
         .where('id', '=', workId)
@@ -95,6 +99,7 @@ export class Publisher {
           author: parseResult.author,
           platform: parseResult.platform,
           external_id: parseResult.external_id,
+          thumbnail_url: parseResult.cover_image_url,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -103,6 +108,7 @@ export class Publisher {
       isNew = true;
     }
 
+    // Update work_features
     const featureNames = acceptedFeatures.map((f) => f.featureName);
     let featuresAdded = 0;
 
@@ -115,6 +121,7 @@ export class Publisher {
 
       const featureIdMap = new Map(features.map((f) => [f.name, f.id]));
 
+      // Delete existing and re-insert
       await db.deleteFrom('work_features').where('work_id', '=', workId).execute();
 
       const workFeatures = acceptedFeatures
@@ -153,14 +160,48 @@ export class Publisher {
     let skipped = 0;
 
     for (const result of parseResults) {
-      const publishResult = await this.publishWork(result.id);
-      if (publishResult) {
-        published++;
-      } else {
+      try {
+        const publishResult = await this.publishWork(result.id);
+        if (publishResult) {
+          published++;
+        } else {
+          skipped++;
+        }
+      } catch (error) {
+        console.error(`Failed to publish parse result ${result.id}:`, error);
         skipped++;
       }
     }
 
     return { published, skipped };
+  }
+
+  async getPublishStats(platform: string): Promise<{
+    totalParsed: number;
+    totalPublished: number;
+    unpublished: number;
+  }> {
+    const [parsed, published] = await Promise.all([
+      db
+        .selectFrom('raw_work_parse_results')
+        .innerJoin('raw_work_pages', 'raw_work_pages.id', 'raw_work_parse_results.raw_page_id')
+        .where('raw_work_pages.platform', '=', platform)
+        .select((eb) => eb.fn.countAll().as('count'))
+        .executeTakeFirst(),
+      db
+        .selectFrom('works')
+        .where('platform', '=', platform)
+        .select((eb) => eb.fn.countAll().as('count'))
+        .executeTakeFirst(),
+    ]);
+
+    const totalParsed = Number(parsed?.count ?? 0);
+    const totalPublished = Number(published?.count ?? 0);
+
+    return {
+      totalParsed,
+      totalPublished,
+      unpublished: totalParsed - totalPublished,
+    };
   }
 }

@@ -18,6 +18,7 @@ export const FeatureCategorySchema = z.enum([
   'genre',
   'setting',
   'protagonist',
+  'character',
   'tone',
   'theme',
 ]);

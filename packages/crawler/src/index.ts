@@ -20,17 +20,18 @@ program
   .description('Crawl bestseller list pages')
   .requiredOption(
     '-g, --genre <genre>',
-    `Genre code (${Object.values(RidiGenre).join(', ')})`
+    `Genre code (all, ${Object.values(RidiGenre).join(', ')})`
   )
   .option(
     '-o, --order <order>',
     `Order (${Object.values(RidiOrder).join(', ')})`,
-    RidiOrder.DAILY
+    RidiOrder.MONTHLY
   )
   .option('-p, --page <page>', 'Page number', '1')
   .option('--pages <count>', 'Number of pages to crawl', '1')
   .action(async (options) => {
-    const validGenres = Object.values(RidiGenre) as string[];
+    const allGenres = Object.values(RidiGenre) as string[];
+    const validGenres = ['all', ...allGenres];
     if (!validGenres.includes(options.genre)) {
       console.error(`Invalid genre: ${options.genre}`);
       console.error(`Valid genres: ${validGenres.join(', ')}`);
@@ -42,7 +43,9 @@ program
       console.error(`Valid orders: ${validOrders.join(', ')}`);
       process.exit(1);
     }
-    const genre = options.genre as RidiGenre;
+    const genres: RidiGenre[] = options.genre === 'all'
+      ? allGenres as RidiGenre[]
+      : [options.genre as RidiGenre];
     const order = options.order as RidiOrder;
 
     const crawler = new RidiListCrawler();
@@ -52,16 +55,24 @@ program
       const startPage = parseInt(options.page, 10);
       const pageCount = parseInt(options.pages, 10);
 
-      for (let i = 0; i < pageCount; i++) {
-        const page = startPage + i;
-        const result = await crawler.crawl({ genre, page, order });
+      for (const genre of genres) {
+        if (genres.length > 1) console.log(`\n=== Genre: ${genre} ===`);
 
-        const items = crawler.parseListItems(result.html);
-        await crawler.saveToDb({ genre, page, order }, items);
+        for (let i = 0; i < pageCount; i++) {
+          const page = startPage + i;
+          const result = await crawler.crawl({ genre, page, order });
 
-        console.log(`Page ${page}: Found ${items.length} items`);
+          const items = crawler.parseListItems(result.html);
+          await crawler.saveToDb({ genre, page, order }, items);
 
-        if (i < pageCount - 1) {
+          console.log(`Page ${page}: Found ${items.length} items`);
+
+          if (i < pageCount - 1) {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+        }
+
+        if (genres.length > 1) {
           await new Promise((r) => setTimeout(r, 1000));
         }
       }
@@ -144,14 +155,46 @@ program
   });
 
 program
-  .command('publish')
-  .description('Publish refined data to serving zone')
+  .command('stats')
+  .description('Show crawler statistics')
   .action(async () => {
+    const validator = new ListValidator();
     const publisher = new Publisher();
 
     try {
-      const result = await publisher.publishAll('ridi');
-      console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}`);
+      const crawlStats = await validator.getStats('ridi');
+      const publishStats = await publisher.getPublishStats('ridi');
+
+      console.log('\n=== Crawler Statistics ===');
+      console.log('\nRaw Zone:');
+      console.log(`  List items: ${crawlStats.totalListItems}`);
+      console.log(`  Work pages: ${crawlStats.totalWorkPages}`);
+      console.log(`  Parsed: ${crawlStats.totalParsed}`);
+      console.log(`  Unparsed: ${crawlStats.totalUnparsed}`);
+
+      console.log('\nServing Zone:');
+      console.log(`  Published works: ${publishStats.totalPublished}`);
+      console.log(`  Unpublished: ${publishStats.unpublished}`);
+    } finally {
+      await closeDb();
+    }
+  });
+
+program
+  .command('publish')
+  .description('Publish refined data to serving zone')
+  .option('--dry-run', 'Show what would be published without actually publishing', false)
+  .action(async (options) => {
+    const publisher = new Publisher();
+
+    try {
+      if (options.dryRun) {
+        const stats = await publisher.getPublishStats('ridi');
+        console.log(`\nDry run: Would publish ${stats.unpublished} works`);
+      } else {
+        const result = await publisher.publishAll('ridi');
+        console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}`);
+      }
     } finally {
       await closeDb();
     }
