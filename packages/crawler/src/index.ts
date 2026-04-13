@@ -122,20 +122,27 @@ program
         ids = ids.slice(0, parseInt(options.limit, 10));
       }
 
+      let failed = 0;
       for (let i = 0; i < ids.length; i++) {
         const id = ids[i];
         console.log(`[${i + 1}/${ids.length}] Crawling ${id}...`);
 
-        const result = await crawler.crawl({ externalId: id });
-        const pageId = await crawler.saveToDb(id, result);
+        try {
+          const result = await crawler.crawl({ externalId: id });
+          const pageId = await crawler.saveToDb(id, result);
 
-        const parsed = await parser.parseFromPage(crawler.getPage());
-        await parser.saveParseResult(pageId, id, parsed);
+          const parsed = await parser.parseFromPage(crawler.getPage());
+          await parser.saveParseResult(pageId, id, parsed);
+        } catch (err) {
+          failed++;
+          console.error(`Failed ${id}: ${err instanceof Error ? err.message : err}`);
+        }
 
         if (i < ids.length - 1) {
           await new Promise((r) => setTimeout(r, 1000));
         }
       }
+      if (failed > 0) console.log(`\nCompleted with ${failed} failures out of ${ids.length}`);
     } finally {
       await crawler.close();
       await closeDb();

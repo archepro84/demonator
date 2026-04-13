@@ -39,7 +39,8 @@ export abstract class BaseCrawler {
       throw new Error('Browser not initialized. Call init() first.');
     }
 
-    await this.page.goto(url, { waitUntil: 'networkidle' });
+    await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await this.page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
     const html = await this.page.content();
 
     return {
