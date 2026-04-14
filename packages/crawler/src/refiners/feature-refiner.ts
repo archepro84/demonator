@@ -1,5 +1,5 @@
 import { db } from '../database/kysely';
-import type { FeatureCandidate, FeatureRejection, RejectionReason } from '../schemas/refined.schema';
+import type { FeatureCandidate, FeatureRejection, FeatureSource, RejectionReason } from '../schemas/refined.schema';
 
 export interface RefinementResult {
   accepted: FeatureCandidate[];
@@ -36,7 +36,7 @@ export class FeatureRefiner {
       } else {
         accepted.push({
           featureName: candidate.feature_name,
-          source: candidate.source as 'keyword' | 'description' | 'ml',
+          source: candidate.source as FeatureSource,
           confidence: Number(candidate.confidence ?? 0),
         });
       }
@@ -65,8 +65,13 @@ export class FeatureRefiner {
 
   private checkRejection(candidate: {
     feature_name: string;
+    source: string | null;
     confidence: unknown;
   }): RejectionReason | null {
+    if (candidate.source === 'enrichment_negative') {
+      return 'low_confidence';
+    }
+
     const confidence = Number(candidate.confidence ?? 0);
 
     if (confidence < this.minConfidence) {
@@ -103,7 +108,7 @@ export class FeatureRefiner {
       .filter((c) => !rejectedNames.has(c.feature_name))
       .map((c) => ({
         featureName: c.feature_name,
-        source: c.source as 'keyword' | 'description' | 'ml',
+        source: c.source as FeatureSource,
         confidence: Number(c.confidence ?? 0),
       }));
   }

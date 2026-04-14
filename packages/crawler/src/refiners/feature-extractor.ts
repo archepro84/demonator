@@ -53,24 +53,24 @@ const FEATURE_DEFINITIONS: FeatureDefinition[] = [
   { name: 'protag_nonhuman', category: 'protagonist', displayName: '인외존재', keywords: ['인외존재', '초월적존재', '마법사'], questions: ['주인공이 인간이 아니거나 초월적 존재인가요?'] },
 
   // ===== Character (캐릭터 성격/특성) =====
-  { name: 'char_obsessive', category: 'character', displayName: '집착캐', keywords: ['집착남', '집착공', '집착녀', '소유욕/독점욕/질투', '광공'], questions: ['소유욕이 강하거나 집착하는 캐릭터가 있나요?'] },
-  { name: 'char_gentle', category: 'character', displayName: '다정캐', keywords: ['다정남', '다정녀', '다정공', '다정수'], questions: ['다정하고 따뜻한 성격의 캐릭터가 있나요?'] },
-  { name: 'char_cold', category: 'character', displayName: '냉정캐', keywords: ['냉정남', '냉정녀', '냉혈공', '냉혈수'], questions: ['차갑고 냉정한 캐릭터가 있나요?'] },
-  { name: 'char_indifferent', category: 'character', displayName: '무심캐', keywords: ['무심남', '무심녀', '무심공', '무심수'], questions: ['무심하고 무관심한 캐릭터가 있나요?'] },
-  { name: 'char_capable', category: 'character', displayName: '능력캐', keywords: ['능력남', '능력녀', '능력수'], questions: ['뛰어난 능력을 가진 캐릭터가 있나요?'] },
-  { name: 'char_wounded', category: 'character', displayName: '상처캐', keywords: ['상처남', '상처녀', '상처공', '상처수', '사연캐'], questions: ['과거에 상처가 있는 사연 있는 캐릭터가 있나요?'] },
-  { name: 'char_schemer', category: 'character', displayName: '계략캐', keywords: ['계략남', '계략녀', '계략수', '복흑/계략공', '계략캐', '능글남', '능글공', '능글녀'], questions: ['능글능글하거나 계략을 꾸미는 캐릭터가 있나요?'] },
-  { name: 'char_pureheart', category: 'character', displayName: '순정캐', keywords: ['순정남', '순정녀', '순정공', '순정수'], questions: ['한 사람만 바라보는 순정파 캐릭터가 있나요?'] },
-  { name: 'char_innocent', category: 'character', displayName: '순진캐', keywords: ['순진녀', '순진수', '순진공'], questions: ['순수하고 순진한 캐릭터가 있나요?'] },
-  { name: 'char_tsundere', category: 'character', displayName: '츤데레', keywords: ['츤데레남', '츤데레공', '츤데레수'], questions: ['겉으로는 차갑지만 속은 따뜻한 츤데레 캐릭터가 있나요?'] },
-  { name: 'char_direct', category: 'character', displayName: '직진캐', keywords: ['직진남', '직진녀'], questions: ['좋아하면 직진하는 캐릭터가 있나요?'] },
-  { name: 'char_arrogant', category: 'character', displayName: '까칠캐', keywords: ['오만남', '까칠남', '까칠공', '까칠녀', '까칠수'], questions: ['오만하거나 까칠한 캐릭터가 있나요?'] },
-  { name: 'char_devoted', category: 'character', displayName: '헌신캐', keywords: ['헌신공', '헌신수', '희생캐'], questions: ['상대를 위해 헌신하거나 희생하는 캐릭터가 있나요?'] },
+  { name: 'char_obsessive', category: 'character', displayName: '집착캐', keywords: ['집착남', '집착공', '집착녀', '집착', '소유욕/독점욕/질투', '광공'], questions: ['소유욕이 강하거나 집착하는 캐릭터가 있나요?'] },
+  { name: 'char_gentle', category: 'character', displayName: '다정캐', keywords: ['다정남', '다정녀', '다정공', '다정수', '다정'], questions: ['다정하고 따뜻한 성격의 캐릭터가 있나요?'] },
+  { name: 'char_cold', category: 'character', displayName: '냉정캐', keywords: ['냉정남', '냉정녀', '냉혈공', '냉혈수', '냉정'], questions: ['차갑고 냉정한 캐릭터가 있나요?'] },
+  { name: 'char_indifferent', category: 'character', displayName: '무심캐', keywords: ['무심남', '무심녀', '무심공', '무심수', '무심'], questions: ['무심하고 무관심한 캐릭터가 있나요?'] },
+  { name: 'char_capable', category: 'character', displayName: '능력캐', keywords: ['능력남', '능력녀', '능력수', '능력캐'], questions: ['뛰어난 능력을 가진 캐릭터가 있나요?'] },
+  { name: 'char_wounded', category: 'character', displayName: '상처캐', keywords: ['상처남', '상처녀', '상처공', '상처수', '사연캐', '상처'], questions: ['과거에 상처가 있는 사연 있는 캐릭터가 있나요?'] },
+  { name: 'char_schemer', category: 'character', displayName: '계략캐', keywords: ['계략남', '계략녀', '계략수', '복흑/계략공', '계략캐', '계략', '능글남', '능글공', '능글녀', '능글'], questions: ['능글능글하거나 계략을 꾸미는 캐릭터가 있나요?'] },
+  { name: 'char_pureheart', category: 'character', displayName: '순정캐', keywords: ['순정남', '순정녀', '순정공', '순정수', '순정'], questions: ['한 사람만 바라보는 순정파 캐릭터가 있나요?'] },
+  { name: 'char_innocent', category: 'character', displayName: '순진캐', keywords: ['순진녀', '순진수', '순진공', '순진'], questions: ['순수하고 순진한 캐릭터가 있나요?'] },
+  { name: 'char_tsundere', category: 'character', displayName: '츤데레', keywords: ['츤데레남', '츤데레공', '츤데레수', '츤데레'], questions: ['겉으로는 차갑지만 속은 따뜻한 츤데레 캐릭터가 있나요?'] },
+  { name: 'char_direct', category: 'character', displayName: '직진캐', keywords: ['직진남', '직진녀', '직진'], questions: ['좋아하면 직진하는 캐릭터가 있나요?'] },
+  { name: 'char_arrogant', category: 'character', displayName: '까칠캐', keywords: ['오만남', '까칠남', '까칠공', '까칠녀', '까칠수', '까칠'], questions: ['오만하거나 까칠한 캐릭터가 있나요?'] },
+  { name: 'char_devoted', category: 'character', displayName: '헌신캐', keywords: ['헌신공', '헌신수', '희생캐', '헌신'], questions: ['상대를 위해 헌신하거나 희생하는 캐릭터가 있나요?'] },
   { name: 'char_badboy', category: 'character', displayName: '나쁜남자', keywords: ['나쁜남자', '나쁜여자', '망나니'], questions: ['나쁜 남자/여자 유형의 캐릭터가 있나요?'] },
   { name: 'char_strong_inside', category: 'character', displayName: '외유내강', keywords: ['외유내강', '외유내강수', '외유내강캐'], questions: ['겉은 부드럽지만 속은 강인한 캐릭터가 있나요?'] },
-  { name: 'char_charismatic', category: 'character', displayName: '카리스마', keywords: ['카리스마남'], questions: ['카리스마 넘치는 캐릭터가 있나요?'] },
-  { name: 'char_regretful', category: 'character', displayName: '후회캐', keywords: ['후회남', '후회공', '후회녀', '후회수'], questions: ['과거를 후회하는 캐릭터가 있나요?'] },
-  { name: 'char_seductive', category: 'character', displayName: '유혹캐', keywords: ['유혹남', '유혹녀', '유혹수'], questions: ['유혹적인 매력의 캐릭터가 있나요?'] },
+  { name: 'char_charismatic', category: 'character', displayName: '카리스마', keywords: ['카리스마남', '카리스마'], questions: ['카리스마 넘치는 캐릭터가 있나요?'] },
+  { name: 'char_regretful', category: 'character', displayName: '후회캐', keywords: ['후회남', '후회공', '후회녀', '후회수', '후회'], questions: ['과거를 후회하는 캐릭터가 있나요?'] },
+  { name: 'char_seductive', category: 'character', displayName: '유혹캐', keywords: ['유혹남', '유혹녀', '유혹수', '유혹'], questions: ['유혹적인 매력의 캐릭터가 있나요?'] },
   { name: 'char_girlcrush', category: 'character', displayName: '걸크러시', keywords: ['걸크러시'], questions: ['멋지고 당찬 여성 캐릭터가 있나요?'] },
 
   // ===== Tone (분위기) =====
@@ -178,6 +178,80 @@ export class FeatureExtractor {
     return candidates;
   }
 
+  extractFromTags(tags: string[]): FeatureCandidate[] {
+    const candidates: FeatureCandidate[] = [];
+    const foundFeatures = new Set<string>();
+
+    for (const tag of tags) {
+      const normalized = tag.toLowerCase().trim();
+
+      for (const def of FEATURE_DEFINITIONS) {
+        if (foundFeatures.has(def.name)) continue;
+        for (const kw of def.keywords) {
+          if (normalized === kw.toLowerCase() || normalized.includes(kw.toLowerCase())) {
+            foundFeatures.add(def.name);
+            candidates.push({
+              featureName: def.name,
+              source: 'enrichment_keyword',
+              confidence: normalized === kw.toLowerCase() ? 0.9 : 0.8,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    return candidates;
+  }
+
+  extractNegativeFromTags(negativeTags: string[]): FeatureCandidate[] {
+    const candidates: FeatureCandidate[] = [];
+    const foundFeatures = new Set<string>();
+
+    for (const tag of negativeTags) {
+      const normalized = tag.toLowerCase().trim();
+
+      for (const def of FEATURE_DEFINITIONS) {
+        if (foundFeatures.has(def.name)) continue;
+        for (const kw of def.keywords) {
+          if (normalized === kw.toLowerCase() || normalized.includes(kw.toLowerCase())) {
+            foundFeatures.add(def.name);
+            candidates.push({
+              featureName: def.name,
+              source: 'enrichment_negative',
+              confidence: 0,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    return candidates;
+  }
+
+  private mergeCandidates(sources: FeatureCandidate[][]): FeatureCandidate[] {
+    const bestByFeature = new Map<string, FeatureCandidate>();
+    const negatives = new Set<string>();
+
+    for (const candidates of sources) {
+      for (const c of candidates) {
+        if (c.source === 'enrichment_negative') {
+          negatives.add(c.featureName);
+          bestByFeature.set(c.featureName, c);
+          continue;
+        }
+        if (negatives.has(c.featureName)) continue;
+        const existing = bestByFeature.get(c.featureName);
+        if (!existing || c.confidence > existing.confidence) {
+          bestByFeature.set(c.featureName, c);
+        }
+      }
+    }
+
+    return [...bestByFeature.values()];
+  }
+
   async extract(parseResultId: number): Promise<{
     runId: number;
     candidates: FeatureCandidate[];
@@ -202,31 +276,36 @@ export class FeatureExtractor {
       .returning('id')
       .executeTakeFirstOrThrow();
 
-    // Extract features
-    const allCandidates: FeatureCandidate[] = [];
-    const seenFeatures = new Set<string>();
+    const candidateSources: FeatureCandidate[][] = [];
 
-    // Keywords have higher priority
+    // 1. Ridi keywords
     if (parseResult.keywords) {
-      const keywordCandidates = this.extractFromKeywords(parseResult.keywords);
-      for (const c of keywordCandidates) {
-        if (!seenFeatures.has(c.featureName)) {
-          seenFeatures.add(c.featureName);
-          allCandidates.push(c);
-        }
+      candidateSources.push(this.extractFromKeywords(parseResult.keywords));
+    }
+
+    // 2. Ridi description
+    if (parseResult.description) {
+      candidateSources.push(this.extractFromDescription(parseResult.description));
+    }
+
+    // 3. Enrichment data
+    const enrichments = await db
+      .selectFrom('raw_work_enrichments')
+      .selectAll()
+      .where('external_id', '=', parseResult.external_id)
+      .execute();
+
+    for (const enrichment of enrichments) {
+      if (enrichment.tags) {
+        candidateSources.push(this.extractFromTags(enrichment.tags));
+      }
+      if (enrichment.negative_tags) {
+        candidateSources.push(this.extractNegativeFromTags(enrichment.negative_tags));
       }
     }
 
-    // Description as fallback
-    if (parseResult.description) {
-      const descCandidates = this.extractFromDescription(parseResult.description);
-      for (const c of descCandidates) {
-        if (!seenFeatures.has(c.featureName)) {
-          seenFeatures.add(c.featureName);
-          allCandidates.push(c);
-        }
-      }
-    }
+    // Merge: keep highest confidence per feature
+    const allCandidates = this.mergeCandidates(candidateSources);
 
     // Save candidates
     if (allCandidates.length > 0) {
@@ -253,8 +332,10 @@ export class FeatureExtractor {
       .where('id', '=', run.id)
       .execute();
 
+    const enrichmentCount = enrichments.length;
     console.log(
-      `Extracted ${allCandidates.length} features for parse result ${parseResultId}`
+      `Extracted ${allCandidates.length} features for parse result ${parseResultId}` +
+      (enrichmentCount > 0 ? ` (with ${enrichmentCount} enrichment(s))` : '')
     );
 
     return { runId: run.id, candidates: allCandidates };
