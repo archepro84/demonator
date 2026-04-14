@@ -1,68 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CatCharacter } from './CatCharacter';
+import { SpeechBubble } from './SpeechBubble';
 import type { WorkDTO } from '../types/game';
-import styles from './ResultScreen.module.css';
+import styles from './GuessRevealScreen.module.css';
 
-interface ResultScreenProps {
-  result: 'correct' | 'give_up';
-  work: WorkDTO | null;
-  totalQuestions: number;
+interface GuessRevealScreenProps {
+  work: WorkDTO;
+  questionNumber: number;
+  onContinue: () => Promise<void>;
   onRestart: () => void;
 }
 
 const BEAM_COUNT = 100;
 const SHOCKWAVE_DELAYS = [100, 800, 1500];
+const BLACKOUT_HOLD = 1000;
 
-function getWorkUrl(work: WorkDTO): string | null {
-  if (work.platform === 'ridi' && work.externalId) {
-    return `https://ridibooks.com/books/${work.externalId}`;
-  }
-  return null;
-}
-
-export function ResultScreen({
-  result,
+export function GuessRevealScreen({
   work,
-  totalQuestions,
+  questionNumber,
+  onContinue,
   onRestart,
-}: ResultScreenProps) {
-  if (result === 'correct' && work) {
-    return (
-      <CorrectScreen
-        work={work}
-        totalQuestions={totalQuestions}
-        onRestart={onRestart}
-      />
-    );
-  }
-
-  return (
-    <div className={styles.container}>
-      <div className={styles.failCard}>
-        <div className={styles.failBadge}>아쉬워요...</div>
-        <p className={styles.failMessage}>
-          이번에는 맞추지 못했어요.
-          <br />
-          다음에 다시 도전해 주세요!
-        </p>
-        <button className={styles.restartButton} onClick={onRestart}>
-          다시 하기
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CorrectScreen({
-  work,
-  totalQuestions,
-  onRestart,
-}: {
-  work: WorkDTO;
-  totalQuestions: number;
-  onRestart: () => void;
-}) {
+}: GuessRevealScreenProps) {
   const [showFooter, setShowFooter] = useState(false);
   const [shaking, setShaking] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const shockwavesRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<number[]>([]);
@@ -70,8 +31,6 @@ function CorrectScreen({
   const addTimer = useCallback((fn: () => void, ms: number) => {
     timersRef.current.push(window.setTimeout(fn, ms));
   }, []);
-
-  const BLACKOUT_HOLD = 1000;
 
   useEffect(() => {
     addTimer(() => {
@@ -110,13 +69,20 @@ function CorrectScreen({
     [],
   );
 
-  const workUrl = getWorkUrl(work);
+  const handleContinue = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onContinue();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={`${styles.scene} ${shaking ? styles.shakeScene : ''}`}>
       <div className={styles.blackout} />
 
-      {/* Layer 1: Light beams */}
       <div
         className={`${styles.effectsOverlay} ${styles.bgAndBeams} ${styles.effectsOverlayActive}`}
         style={
@@ -128,7 +94,6 @@ function CorrectScreen({
         <div className={styles.lightBeams}>{beams}</div>
       </div>
 
-      {/* Layer 2: Shockwaves */}
       <div
         className={`${styles.effectsOverlay} ${styles.shockwavesLayer} ${styles.effectsOverlayActive}`}
         style={
@@ -140,7 +105,6 @@ function CorrectScreen({
         <div ref={shockwavesRef} className={styles.shockwaves} />
       </div>
 
-      {/* Layer 3: Card */}
       <div className={`${styles.cardWrapper} ${styles.revealingWrapper}`}>
         <div className={`${styles.card} ${styles.revealingCard}`}>
           <div className={`${styles.cardFace} ${styles.cardFront}`}>
@@ -155,16 +119,6 @@ function CorrectScreen({
             {work.author && (
               <p className={styles.cardAuthor}>{work.author}</p>
             )}
-            {workUrl && (
-              <a
-                className={styles.cardLink}
-                href={workUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                작품 보러가기
-              </a>
-            )}
           </div>
           <div className={`${styles.cardFace} ${styles.cardBack}`}>
             <img
@@ -177,16 +131,38 @@ function CorrectScreen({
         </div>
       </div>
 
-      {/* Footer: appears after reveal */}
       <div
         className={`${styles.revealFooter} ${showFooter ? styles.revealFooterVisible : ''}`}
       >
         <p className={styles.stats}>
-          {totalQuestions}개의 질문만에 맞췄어요!
+          {questionNumber}개의 질문 후 추측했어요!
         </p>
-        <button className={styles.restartButton} onClick={onRestart}>
-          다시 하기
-        </button>
+        <div className={styles.guessFooter}>
+          <CatCharacter size="medium" />
+          <SpeechBubble>
+            <p className={styles.guessMessage}>
+              혹시....
+              <br />
+              이 작품이 아닌가요?
+            </p>
+          </SpeechBubble>
+        </div>
+        <div className={styles.guessButtons}>
+          <button
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            onClick={handleContinue}
+            disabled={loading}
+          >
+            이어하기
+          </button>
+          <button
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            onClick={onRestart}
+            disabled={loading}
+          >
+            처음부터
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -28,18 +28,20 @@ export function StartScreen({ onStart }: StartScreenProps) {
       <div className={styles.content}>
         <h1 className={styles.title}>Demonator</h1>
 
-        <SpeechBubble direction="bottom">
-          <p className={styles.greeting}>
-            안녕하세요!
-            <br />
-            당신이 생각하는 웹소설을 맞춰볼게요!
-            <br />
-            함께 작품을 찾아볼까요?
-          </p>
-        </SpeechBubble>
+        <div className={styles.characterGroup}>
+          <SpeechBubble direction="bottom">
+            <p className={styles.greeting}>
+              안녕하세요!
+              <br />
+              당신이 생각하는 웹소설을 맞춰볼게요!
+              <br />
+              함께 작품을 찾아볼까요?
+            </p>
+          </SpeechBubble>
 
-        <div className={styles.character}>
-          <CatCharacter size="large" animated />
+          <div className={styles.character}>
+            <CatCharacter size="large" />
+          </div>
         </div>
 
         <button

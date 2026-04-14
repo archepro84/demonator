@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
 import { StartScreen } from './components/StartScreen';
 import { GameScreen } from './components/GameScreen';
+import { GuessRevealScreen } from './components/GuessRevealScreen';
 import { ResultScreen } from './components/ResultScreen';
 import { startGame, submitAnswer, submitGuessResponse } from './api/game';
 import type { QuestionDTO, WorkDTO, Answer } from './types/game';
 import styles from './App.module.css';
 
-type Screen = 'start' | 'game' | 'result';
+type Screen = 'start' | 'game' | 'guess' | 'result';
 
 interface GameState {
   sessionId: string;
@@ -65,6 +66,7 @@ export default function App() {
           currentGuess: res.guess,
           questionNumber: res.questionNumber,
         }));
+        setScreen('guess');
       }
     },
     [game.sessionId],
@@ -81,7 +83,6 @@ export default function App() {
           guessedWork: prev.currentGuess?.work ?? null,
           totalQuestions: res.totalQuestions,
         }));
-        setScreen('result');
       } else if (res.result === 'give_up') {
         setGame((prev) => ({
           ...prev,
@@ -104,6 +105,7 @@ export default function App() {
             currentQuestion: res.question!,
             questionNumber: res.questionNumber,
           }));
+          setScreen('game');
         }
       }
     },
@@ -126,6 +128,15 @@ export default function App() {
           remainingCandidates={game.remainingCandidates}
           onAnswer={handleAnswer}
           onGuessResponse={handleGuessResponse}
+        />
+      )}
+      {screen === 'guess' && game.currentGuess && (
+        <GuessRevealScreen
+          key={game.currentGuess.work.id}
+          work={game.currentGuess.work}
+          questionNumber={game.questionNumber}
+          onContinue={() => handleGuessResponse(false)}
+          onRestart={handleRestart}
         />
       )}
       {screen === 'result' && (
