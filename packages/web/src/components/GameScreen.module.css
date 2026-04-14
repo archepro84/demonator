@@ -1,0 +1,185 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  align-self: flex-start;
+}
+
+.questionNum {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f5c542;
+}
+
+.candidates {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.gameArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: 32px 0;
+}
+
+.catSide {
+  flex-shrink: 0;
+}
+
+.interactionSide {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.questionMode,
+.guessMode {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: slideIn 0.4s ease-out;
+}
+
+.questionText {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.guessText {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #666;
+}
+
+.guessWork {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.guessThumbnail {
+  width: 64px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.guessInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guessTitle {
+  font-size: 1.1rem;
+  color: #1a1a2e;
+}
+
+.guessAuthor {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.answerButtons,
+.guessButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn {
+  padding: 14px 32px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnYes {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(74, 222, 128, 0.3);
+}
+
+.btnYes:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(74, 222, 128, 0.45);
+}
+
+.btnNo {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(248, 113, 113, 0.3);
+}
+
+.btnNo:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(248, 113, 113, 0.45);
+}
+
+.btnMaybe {
+  background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);
+}
+
+.btnMaybe:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(167, 139, 250, 0.45);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .gameArea {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .interactionSide {
+    min-width: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+}

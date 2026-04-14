@@ -52,37 +52,6 @@ const FEATURE_DEFINITIONS: FeatureDefinition[] = [
   { name: 'protag_noble', category: 'protagonist', displayName: '귀족', keywords: ['귀족', '공작', '백작', '영애', '공녀', '왕족/귀족'], questions: ['주인공이 공작이나 귀족 가문인가요?'] },
   { name: 'protag_nonhuman', category: 'protagonist', displayName: '인외존재', keywords: ['인외존재', '초월적존재', '마법사'], questions: ['주인공이 인간이 아니거나 초월적 존재인가요?'] },
 
-  // ===== Character (캐릭터 성격/특성) =====
-  { name: 'char_obsessive', category: 'character', displayName: '집착캐', keywords: ['집착남', '집착공', '집착녀', '소유욕/독점욕/질투', '광공'], questions: ['소유욕이 강하거나 집착하는 캐릭터가 있나요?'] },
-  { name: 'char_gentle', category: 'character', displayName: '다정캐', keywords: ['다정남', '다정녀', '다정공', '다정수'], questions: ['다정하고 따뜻한 성격의 캐릭터가 있나요?'] },
-  { name: 'char_cold', category: 'character', displayName: '냉정캐', keywords: ['냉정남', '냉정녀', '냉혈공', '냉혈수'], questions: ['차갑고 냉정한 캐릭터가 있나요?'] },
-  { name: 'char_indifferent', category: 'character', displayName: '무심캐', keywords: ['무심남', '무심녀', '무심공', '무심수'], questions: ['무심하고 무관심한 캐릭터가 있나요?'] },
-  { name: 'char_capable', category: 'character', displayName: '능력캐', keywords: ['능력남', '능력녀', '능력수'], questions: ['뛰어난 능력을 가진 캐릭터가 있나요?'] },
-  { name: 'char_wounded', category: 'character', displayName: '상처캐', keywords: ['상처남', '상처녀', '상처공', '상처수', '사연캐'], questions: ['과거에 상처가 있는 사연 있는 캐릭터가 있나요?'] },
-  { name: 'char_schemer', category: 'character', displayName: '계략캐', keywords: ['계략남', '계략녀', '계략수', '복흑/계략공', '계략캐', '능글남', '능글공', '능글녀'], questions: ['능글능글하거나 계략을 꾸미는 캐릭터가 있나요?'] },
-  { name: 'char_pureheart', category: 'character', displayName: '순정캐', keywords: ['순정남', '순정녀', '순정공', '순정수'], questions: ['한 사람만 바라보는 순정파 캐릭터가 있나요?'] },
-  { name: 'char_innocent', category: 'character', displayName: '순진캐', keywords: ['순진녀', '순진수', '순진공'], questions: ['순수하고 순진한 캐릭터가 있나요?'] },
-  { name: 'char_tsundere', category: 'character', displayName: '츤데레', keywords: ['츤데레남', '츤데레공', '츤데레수'], questions: ['겉으로는 차갑지만 속은 따뜻한 츤데레 캐릭터가 있나요?'] },
-  { name: 'char_direct', category: 'character', displayName: '직진캐', keywords: ['직진남', '직진녀'], questions: ['좋아하면 직진하는 캐릭터가 있나요?'] },
-  { name: 'char_arrogant', category: 'character', displayName: '까칠캐', keywords: ['오만남', '까칠남', '까칠공', '까칠녀', '까칠수'], questions: ['오만하거나 까칠한 캐릭터가 있나요?'] },
-  { name: 'char_devoted', category: 'character', displayName: '헌신캐', keywords: ['헌신공', '헌신수', '희생캐'], questions: ['상대를 위해 헌신하거나 희생하는 캐릭터가 있나요?'] },
-  { name: 'char_badboy', category: 'character', displayName: '나쁜남자', keywords: ['나쁜남자', '나쁜여자', '망나니'], questions: ['나쁜 남자/여자 유형의 캐릭터가 있나요?'] },
-  { name: 'char_strong_inside', category: 'character', displayName: '외유내강', keywords: ['외유내강', '외유내강수', '외유내강캐'], questions: ['겉은 부드럽지만 속은 강인한 캐릭터가 있나요?'] },
-  { name: 'char_charismatic', category: 'character', displayName: '카리스마', keywords: ['카리스마남'], questions: ['카리스마 넘치는 캐릭터가 있나요?'] },
-  { name: 'char_regretful', category: 'character', displayName: '후회캐', keywords: ['후회남', '후회공', '후회녀', '후회수'], questions: ['과거를 후회하는 캐릭터가 있나요?'] },
-  { name: 'char_seductive', category: 'character', displayName: '유혹캐', keywords: ['유혹남', '유혹녀', '유혹수'], questions: ['유혹적인 매력의 캐릭터가 있나요?'] },
-  { name: 'char_girlcrush', category: 'character', displayName: '걸크러시', keywords: ['걸크러시'], questions: ['멋지고 당찬 여성 캐릭터가 있나요?'] },
-
-  // ===== Tone (분위기) =====
-  { name: 'tone_serious', category: 'tone', displayName: '진지', keywords: ['진지', '시리어스', '무거운', '시리어스물'], questions: ['시리어스하고 무거운 분위기인가요?'] },
-  { name: 'tone_comedy', category: 'tone', displayName: '코믹', keywords: ['코믹', '코미디', '개그', '웃긴', '유머', '코믹/개그물'], questions: ['개그/코미디 요소가 많은가요?', '웃긴 장면이 자주 나오나요?'] },
-  { name: 'tone_dark', category: 'tone', displayName: '다크', keywords: ['다크', '암울', '잔혹', '고어', '피폐물', '하드코어'], questions: ['암울하거나 잔혹한 분위기인가요?'] },
-  { name: 'tone_fluff', category: 'tone', displayName: '달달', keywords: ['달달', '플러피', '설렘', '두근', '달달물'], questions: ['달달하고 설레는 분위기인가요?', '읽으면 두근두근한 작품인가요?'] },
-  { name: 'tone_angst', category: 'tone', displayName: '비극', keywords: ['앙스트', '눈물', '슬픔', '비극', '애잔물', '애절물', '신파'], questions: ['슬프거나 눈물 나는 전개가 있나요?', '비극적인 요소가 있나요?'] },
-  { name: 'tone_slow_burn', category: 'tone', displayName: '슬로우번', keywords: ['슬로우번', '천천히', '느린 전개'], questions: ['전개가 천천히 진행되는 슬로우번인가요?'] },
-  { name: 'tone_healing', category: 'tone', displayName: '힐링', keywords: ['힐링물', '잔잔물'], questions: ['잔잔하고 마음이 따뜻해지는 힐링물인가요?'] },
-  { name: 'tone_satisfying', category: 'tone', displayName: '사이다', keywords: ['사이다물', '사이다남', '사이다녀', '권선징악'], questions: ['속이 시원해지는 사이다 전개가 있나요?', '권선징악 스토리인가요?'] },
-
   // ===== Theme (테마) =====
   { name: 'theme_revenge', category: 'theme', displayName: '복수', keywords: ['복수', '복수극', '앙갚음'], questions: ['복수가 핵심 동기인 이야기인가요?'] },
   { name: 'theme_growth', category: 'theme', displayName: '성장', keywords: ['성장', '성장물', '발전'], questions: ['주인공의 성장 과정이 중요한가요?'] },
