@@ -81,7 +81,7 @@ yarn test
 
 - `works`, `features`, `work_features` 3개 테이블 병렬 로드
 - 피처가 0개인 작품은 자동 제외
-- `getConfidence(workId, featureId)` — 매핑이 없으면 `DEFAULT_ABSENT = 0.05` 반환
+- `getConfidence(workId, featureId)` — 매핑이 없으면 `DEFAULT_ABSENT = 0.5` (모르겠다) 반환
 - `getAllFeatures()` — keywords, questions 포함
 
 ### Engine
@@ -104,13 +104,16 @@ yarn test
 
 **1. 일반 질문 (`selectNextQuestion`)**
 
-모든 미사용 피처에 대해 정보 이득(split score)을 계산하여 상위 5개 중 랜덤 선택.
+모든 미사용 피처에 대해 정보 이득(split score)과 데이터 커버리지를 함께 계산하여 상위 5개 중 랜덤 선택.
 
 ```
 splitScore = 1 - |yesWeight - noWeight| / total
+coverage = knownWeight / totalWeight
+finalScore = splitScore × coverage + categoryBonus × 0.01
 ```
 
-- 1.0에 가까울수록 후보를 균등하게 나누는 좋은 질문
+- `splitScore`: 1.0에 가까울수록 후보를 균등하게 나누는 좋은 질문
+- `coverage`: 해당 feature에 대해 실제 데이터가 있는 작품의 비율. 데이터 없이 DEFAULT_ABSENT(0.5)로만 채워진 feature가 과대평가되는 것을 방지
 - 카테고리 우선도로 tiebreak: genre > setting > protagonist > tone > character > theme
 - 상위 5개 중 랜덤 선택하여 매 판 다른 질문 순서를 보장
 

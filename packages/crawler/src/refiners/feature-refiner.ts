@@ -7,7 +7,6 @@ export interface RefinementResult {
 }
 
 export class FeatureRefiner {
-  private readonly minConfidence = 0.5;
   private readonly tooCommonFeatures = new Set<string>([
     // Features that are too generic
   ]);
@@ -68,16 +67,6 @@ export class FeatureRefiner {
     source: string | null;
     confidence: unknown;
   }): RejectionReason | null {
-    if (candidate.source === 'enrichment_negative') {
-      return null;
-    }
-
-    const confidence = Number(candidate.confidence ?? 0);
-
-    if (confidence < this.minConfidence) {
-      return 'low_confidence';
-    }
-
     if (this.tooCommonFeatures.has(candidate.feature_name)) {
       return 'too_common';
     }

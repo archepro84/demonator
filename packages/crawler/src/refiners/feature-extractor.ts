@@ -1,7 +1,11 @@
 import { db } from '../database/kysely';
 import type { FeatureCandidate, FeatureDefinition } from '../schemas/refined.schema';
 
-export const NEGATIVE_CONFIDENCE = 0.02;
+export const CONFIDENCE = {
+  POSITIVE: 0.9,
+  PROBABLE: 0.7,
+  NEGATIVE: 0.1,
+} as const;
 
 // Feature definitions - keyword to feature mapping
 // 리디북스 키워드 기반으로 구성
@@ -123,7 +127,7 @@ export class FeatureExtractor {
             candidates.push({
               featureName: def.name,
               source: 'keyword',
-              confidence: normalizedKeyword === kw.toLowerCase() ? 0.95 : 0.85,
+              confidence: CONFIDENCE.POSITIVE,
             });
             break;
           }
@@ -154,7 +158,7 @@ export class FeatureExtractor {
         candidates.push({
           featureName: def.name,
           source: 'description',
-          confidence: Math.min(0.4 + matchCount * 0.15, 0.75),
+          confidence: CONFIDENCE.PROBABLE,
         });
       }
     }
@@ -177,7 +181,7 @@ export class FeatureExtractor {
             candidates.push({
               featureName: def.name,
               source: 'enrichment_keyword',
-              confidence: normalized === kw.toLowerCase() ? 0.9 : 0.8,
+              confidence: CONFIDENCE.POSITIVE,
             });
             break;
           }
@@ -203,7 +207,7 @@ export class FeatureExtractor {
             candidates.push({
               featureName: def.name,
               source: 'enrichment_negative',
-              confidence: NEGATIVE_CONFIDENCE,
+              confidence: CONFIDENCE.NEGATIVE,
             });
             break;
           }
