@@ -1,0 +1,374 @@
+/* ===== Scene ===== */
+
+.scene {
+  perspective: 2000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Full-screen blackout overlay */
+.blackout {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100;
+  animation: blackoutFade 2.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes blackoutFade {
+  0% { opacity: 1; }
+  40% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cameraShake {
+  0% { transform: translate(2px, 2px); }
+  25% { transform: translate(-2px, -4px); }
+  50% { transform: translate(-5px, 0px); }
+  75% { transform: translate(4px, 3px); }
+  100% { transform: translate(0, 0); }
+}
+
+.shakeScene {
+  animation: cameraShake 0.4s 1s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* ===== Effect overlays ===== */
+
+.effectsOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.effectsOverlayActive {
+  opacity: 1;
+}
+
+/* Light beams */
+
+.bgAndBeams {
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.96);
+}
+
+.lightBeams {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.beam {
+  position: absolute;
+  width: 3px;
+  height: 150vh;
+  background: linear-gradient(to top, transparent, rgba(180, 210, 255, 0.9), transparent);
+  animation: beamInOut 1.5s ease-in infinite;
+}
+
+@keyframes beamInOut {
+  0% { transform: translate(-50%, -50%) rotate(var(--angle)) scaleY(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(var(--angle)) scaleY(2); opacity: 0; }
+}
+
+/* Shockwaves */
+
+.shockwavesLayer {
+  z-index: 5;
+  perspective: 1500px;
+}
+
+.shockwaves {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(80deg) translateZ(-50px);
+  width: 0;
+  height: 0;
+}
+
+.shockwave {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: transparent;
+  border-style: solid;
+  border-color: rgba(200, 220, 255, 0.8);
+  box-shadow: 0 0 12px rgba(150, 190, 255, 0.6), inset 0 0 12px rgba(150, 190, 255, 0.4);
+  animation: shockwaveOut 2s cubic-bezier(0.1, 0.5, 0.5, 1) forwards;
+}
+
+@keyframes shockwaveOut {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+    border-width: 15px;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(25);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* ===== Card ===== */
+
+.cardWrapper {
+  z-index: 10;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.revealingWrapper {
+  animation: wrapperAppear 4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+@keyframes wrapperAppear {
+  0% { transform: translateZ(-1000px) translateY(100px); }
+  30% { transform: translateZ(200px) translateY(-50px); }
+  100% { transform: translateZ(0) translateY(0); }
+}
+
+.card {
+  width: 240px;
+  height: 340px;
+  transform-style: preserve-3d;
+  opacity: 1;
+  transform: scale(0.6) rotateX(20deg);
+  transition: transform 0.6s ease, opacity 0.6s ease;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #b0b8d0, #686e80);
+}
+
+.revealingCard {
+  animation: cardRotateComplex 4s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+@keyframes cardRotateComplex {
+  0% { transform: rotateX(45deg) rotateY(0deg) rotateZ(0deg) scale(0.6); }
+  25% { transform: rotateX(-30deg) rotateY(180deg) rotateZ(30deg) scale(0.9); }
+  60% { transform: rotateX(60deg) rotateY(540deg) rotateZ(-60deg) scale(1.1); }
+  100% { transform: rotateX(0deg) rotateY(900deg) rotateZ(720deg) scale(1.1); }
+}
+
+.cardFace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.4rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 1);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.cardBack {
+  background: linear-gradient(135deg, #1a1a2e, #0a0a18);
+  border: 2px solid rgba(150, 190, 255, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 1), 0 0 30px rgba(100, 150, 255, 0.1);
+  transform: translateZ(3px);
+}
+
+.cardBackImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  user-select: none;
+}
+
+.cardFront {
+  background: linear-gradient(160deg,
+    rgba(240, 248, 255, 0.8),
+    rgba(210, 225, 255, 0.65));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #1a1a2e;
+  transform: rotateY(180deg) translateZ(3px);
+  gap: 6px;
+  padding: 16px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.cardFront::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    transparent 50%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.cardThumbnail {
+  width: 140px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.cardAuthor {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Footer ===== */
+
+.revealFooter {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.revealFooterVisible {
+  animation: slideUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.stats {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Guess footer: cat + speech bubble */
+
+.guessFooter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.guessMessage {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1a1a2e;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.guessButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  color: #fff;
+  background: linear-gradient(135deg, #6c3ce0, #8b5cf6);
+  box-shadow: 0 4px 20px rgba(108, 60, 224, 0.4);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(108, 60, 224, 0.55);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btnSecondary {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.btnSecondary:active:not(:disabled) {
+  transform: translateY(0);
+}

@@ -7,7 +7,8 @@
   ],
   "scripts": {
     "crawler": "npm run -w @demonator/crawler",
-    "server": "npm run -w @demonator/server"
+    "server": "npm run -w @demonator/server",
+    "web": "npm run -w @demonator/web"
   },
   "repository": {
     "type": "git",

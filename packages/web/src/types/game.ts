@@ -1,19 +1,3 @@
-export type GameStatus = 'playing' | 'guessing' | 'finished';
-export type Answer = 'yes' | 'no' | 'maybe' | 'probably' | 'probably_not';
-
-export interface GameSession {
-  id: string;
-  workScores: Map<number, number>;
-  askedFeatures: Set<number>;
-  /** feature_ids that have already been guessed wrong */
-  guessedWorkIds: Set<number>;
-  /** feature_id of the currently pending question awaiting user answer */
-  pendingFeatureId: number | null;
-  questionCount: number;
-  status: GameStatus;
-  createdAt: Date;
-}
-
 export interface QuestionDTO {
   featureId: number;
   category: string;
@@ -37,9 +21,7 @@ export interface StartResponse {
   questionNumber: number;
 }
 
-export interface AnswerRequest {
-  answer: Answer;
-}
+export type Answer = 'yes' | 'no' | 'maybe';
 
 export interface AnswerResponseQuestion {
   type: 'question';
@@ -56,10 +38,6 @@ export interface AnswerResponseGuess {
 }
 
 export type AnswerResponse = AnswerResponseQuestion | AnswerResponseGuess;
-
-export interface GuessRequest {
-  correct: boolean;
-}
 
 export interface GuessResponseCorrect {
   result: 'correct';
