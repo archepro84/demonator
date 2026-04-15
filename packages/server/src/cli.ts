@@ -73,6 +73,7 @@ function createSession(workIds: number[]): GameSession {
   return {
     id: uuidv4(), workScores, askedFeatures: new Set(), guessedWorkIds: new Set(),
     pendingFeatureId: null, questionCount: 0, status: 'playing', createdAt: new Date(),
+    isTiebreaker: false,
   };
 }
 
