@@ -553,7 +553,7 @@ program
             try {
               const result = await crawler.crawl({ externalId: id });
               const pageId = await crawler.saveToDb(id, result);
-              const p = await parser.parseFromPage(crawler.getPage());
+              const p = await parser.parseFromPage(crawler.getPage(), id);
               await parser.saveParseResult(pageId, id, p);
               console.log(`  OK: ${p.title ?? id}`);
               success++;
