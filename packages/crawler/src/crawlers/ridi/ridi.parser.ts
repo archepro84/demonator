@@ -19,11 +19,10 @@ const PRICE_OR_VOLUME_RE = /^\d+%할인$|^\d+[만천]?원|^\d+~|^\d+권이상$/;
 const ADULT_PLACEHOLDER_RE = /cover_adult/;
 
 export class RidiParser {
-  async parseFromPage(page: Page): Promise<ParsedWorkData> {
-    const [title, coverImageUrl, author, description, keywords, introductionImages, volumeCount, contentType] =
+  async parseFromPage(page: Page, externalId: string): Promise<ParsedWorkData> {
+    const [title, author, description, keywords, introductionImages, volumeCount, contentType] =
       await Promise.all([
         this.extractTitle(page),
-        this.extractCoverImage(page),
         this.extractAuthor(page),
         this.extractDescription(page),
         this.extractKeywords(page),
@@ -31,6 +30,8 @@ export class RidiParser {
         this.extractVolumeCount(page),
         this.detectContentType(page),
       ]);
+
+    const coverImageUrl = `https://img.ridicdn.net/cover/${externalId}/xxlarge#1`;
 
     return { title, author, description, keywords, volumeCount, coverImageUrl, introductionImages, contentType };
   }
