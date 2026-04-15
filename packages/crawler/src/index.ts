@@ -487,6 +487,150 @@ program
   });
 
 program
+  .command('pipeline:books')
+  .description('Run full pipeline for book IDs: crawl → enrich → publish')
+  .option('-f, --file <path>', 'JSON file with external_ids', 'data/external_ids.json')
+  .option('-e, --enrichment <path>', 'Enrichment JSON file', 'data/enrichment.json')
+  .option('--skip-existing', 'Skip already-parsed books', false)
+  .option('--skip-crawl', 'Skip crawl step (use existing parse results)', false)
+  .option('--skip-enrich', 'Skip enrichment import step', false)
+  .action(async (options) => {
+    const startTime = Date.now();
+    const step = (n: number, label: string) =>
+      console.log(`\n${'='.repeat(3)} Step ${n}: ${label} ${'='.repeat(40 - label.length)}`);
+
+    // ── Step 1: Crawl books ──
+    if (!options.skipCrawl) {
+      step(1, 'Crawl Books');
+      const content = await readFile(options.file, 'utf-8');
+      const parsed = JSON.parse(content);
+      let ids: string[] = (Array.isArray(parsed) ? parsed : parsed.external_ids ?? parsed.ids ?? [])
+        .map(String).filter(Boolean);
+      ids = [...new Set(ids)];
+
+      console.log(`Loaded ${ids.length} book ID(s) from ${options.file}`);
+
+      if (options.skipExisting) {
+        const existing = await db
+          .selectFrom('raw_work_parse_results')
+          .select('external_id')
+          .where('external_id', 'in', ids)
+          .execute();
+        const existingSet = new Set(existing.map((r) => r.external_id));
+        const before = ids.length;
+        ids = ids.filter((id) => !existingSet.has(id));
+        if (before !== ids.length) {
+          console.log(`Skipping ${before - ids.length} already-parsed books`);
+        }
+      }
+
+      if (ids.length > 0) {
+        await db
+          .insertInto('raw_list_items')
+          .values(ids.map((id) => ({
+            platform: 'ridi' as const,
+            list_type: 'manual' as const,
+            external_id: id,
+            title: null,
+            author: null,
+          })))
+          .onConflict((oc) =>
+            oc.columns(['platform', 'external_id']).doUpdateSet(() => ({
+              crawled_at: sql`NOW()`,
+            }))
+          )
+          .execute();
+
+        const crawler = new RidiCrawler();
+        const parser = new RidiParser();
+        await crawler.init();
+
+        let success = 0, failed = 0;
+        try {
+          for (let i = 0; i < ids.length; i++) {
+            const id = ids[i];
+            console.log(`[${i + 1}/${ids.length}] Crawling ${id}...`);
+            try {
+              const result = await crawler.crawl({ externalId: id });
+              const pageId = await crawler.saveToDb(id, result);
+              const p = await parser.parseFromPage(crawler.getPage());
+              await parser.saveParseResult(pageId, id, p);
+              console.log(`  OK: ${p.title ?? id}`);
+              success++;
+            } catch (err) {
+              failed++;
+              console.error(`  FAIL: ${err instanceof Error ? err.message : err}`);
+            }
+            if (i < ids.length - 1) await new Promise((r) => setTimeout(r, 1000));
+          }
+        } finally {
+          await crawler.close();
+        }
+        console.log(`Crawl done: ${success} success, ${failed} failed`);
+      } else {
+        console.log('All books already parsed. Skipping crawl.');
+      }
+    } else {
+      step(1, 'Crawl Books (SKIPPED)');
+    }
+
+    // ── Step 2: Enrich ──
+    if (!options.skipEnrich) {
+      step(2, 'Import Enrichment');
+      try {
+        const raw = await readFile(options.enrichment, 'utf-8');
+        const parsed = EnrichmentImportSchema.safeParse(JSON.parse(raw));
+        if (!parsed.success) {
+          console.error('Enrichment validation failed:');
+          for (const issue of parsed.error.issues) {
+            console.error(`  [${issue.path.join('.')}] ${issue.message}`);
+          }
+        } else {
+          const { works } = parsed.data;
+          let inserted = 0, updated = 0;
+          for (const work of works) {
+            const exists = await db
+              .selectFrom('raw_work_enrichments')
+              .select('id')
+              .where('external_id', '=', work.external_id)
+              .executeTakeFirst();
+
+            const tags = work.tags.length > 0 ? work.tags : null;
+            const negativeTags = work.negative_tags.length > 0 ? work.negative_tags : null;
+
+            if (exists) {
+              await db.updateTable('raw_work_enrichments')
+                .set({ tags, negative_tags: negativeTags })
+                .where('id', '=', exists.id).execute();
+              updated++;
+            } else {
+              await db.insertInto('raw_work_enrichments')
+                .values({ external_id: work.external_id, tags, negative_tags: negativeTags })
+                .execute();
+              inserted++;
+            }
+          }
+          console.log(`Enrichment done: ${inserted} inserted, ${updated} updated`);
+        }
+      } catch (err) {
+        console.error(`Enrichment file not found or invalid: ${options.enrichment}`);
+      }
+    } else {
+      step(2, 'Import Enrichment (SKIPPED)');
+    }
+
+    // ── Step 3: Publish ──
+    step(3, 'Publish');
+    const publisher = new Publisher();
+    const publishResult = await publisher.publishAll('ridi');
+    console.log(`Published: ${publishResult.published}, Skipped: ${publishResult.skipped}, Deduped: ${publishResult.deduped}`);
+
+    await closeDb();
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`\n=== Pipeline Complete (${elapsed}s) ===`);
+  });
+
+program
   .command('enrich:list')
   .description('List works that have no enrichment data')
   .option('--limit <limit>', 'Limit number of results')
