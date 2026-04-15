@@ -11,6 +11,7 @@ export interface GameSession {
   pendingFeatureId: number | null;
   questionCount: number;
   status: GameStatus;
+  isTiebreaker: boolean;
   createdAt: Date;
 }
 
@@ -47,6 +48,7 @@ export interface AnswerResponseQuestion {
   remainingCandidates: number;
   topCandidate: { title: string; confidence: number };
   questionNumber: number;
+  isTiebreaker?: boolean;
 }
 
 export interface AnswerResponseGuess {

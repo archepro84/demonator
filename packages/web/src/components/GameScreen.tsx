@@ -8,6 +8,7 @@ interface GameScreenProps {
   guess: { work: WorkDTO; confidence: number } | null;
   questionNumber: number;
   remainingCandidates: number;
+  isTiebreaker?: boolean;
   onAnswer: (answer: Answer) => Promise<void>;
   onGuessResponse: (correct: boolean) => Promise<void>;
 }
@@ -17,6 +18,7 @@ export function GameScreen({
   guess,
   questionNumber,
   remainingCandidates,
+  isTiebreaker,
   onAnswer,
   onGuessResponse,
 }: GameScreenProps) {
@@ -58,7 +60,13 @@ export function GameScreen({
       <div className={styles.gameArea}>
         <div className={styles.catSide}>
           <img
-            src={questionNumber > 3 ? "/assets/ridinator-angry.png" : "/assets/ridinator-hover.png"}
+            src={
+              isTiebreaker
+                ? "/assets/ridinator-tiebreaker.png"
+                : questionNumber > 3
+                  ? "/assets/ridinator-angry.png"
+                  : "/assets/ridinator-hover.png"
+            }
             alt="Ridinator"
             className={styles.characterImg}
           />

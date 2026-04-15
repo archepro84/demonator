@@ -28,14 +28,14 @@ export class GameEngine {
   constructor(
     private readonly cache: WorkFeatureCache,
     private readonly sessionStore: SessionStore,
-  ) {}
+  ) { }
 
   startGame(): StartResponse {
     const workIds = this.cache.getAllWorkIds();
     if (workIds.length === 0) {
       throw new Error('No works available in the database');
     }
-    
+
     const session = this.sessionStore.create(workIds);
     const feature = selectNextQuestion(session, this.cache);
     if (!feature) {
@@ -132,6 +132,7 @@ export class GameEngine {
         const tb = selectTiebreakerQuestion(session, this.cache, tiedIds);
         if (tb) {
           session.pendingFeatureId = tb.id;
+          session.isTiebreaker = true;
           return false;
         }
       }
@@ -172,6 +173,8 @@ export class GameEngine {
     const top = getTopCandidates(session, 1);
     const topWork = top.length > 0 ? this.cache.getWork(top[0].workId) : null;
     const remaining = this.countEffectiveCandidates(session);
+    const isTiebreaker = session.isTiebreaker;
+    session.isTiebreaker = false;
 
     return {
       type: 'question',
@@ -182,6 +185,7 @@ export class GameEngine {
         confidence: top.length > 0 ? Math.round(top[0].score * 100) / 100 : 0,
       },
       questionNumber: session.questionCount + 1,
+      ...(isTiebreaker && { isTiebreaker: true }),
     };
   }
 
