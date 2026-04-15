@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CatCharacter } from './CatCharacter';
-import { SpeechBubble } from './SpeechBubble';
 import type { WorkDTO } from '../types/game';
 import styles from './GuessRevealScreen.module.css';
 
@@ -138,30 +136,44 @@ export function GuessRevealScreen({
           {questionNumber}개의 질문 후 추측했어요!
         </p>
         <div className={styles.guessFooter}>
-          <CatCharacter size="medium" />
-          <SpeechBubble>
-            <p className={styles.guessMessage}>
-              혹시....
-              <br />
-              이 작품이 아닌가요?
-            </p>
-          </SpeechBubble>
-        </div>
-        <div className={styles.guessButtons}>
-          <button
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={handleContinue}
-            disabled={loading}
-          >
-            이어하기
-          </button>
-          <button
-            className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={onRestart}
-            disabled={loading}
-          >
-            처음부터
-          </button>
+          <img
+            src="/assets/ridinator-hover.png"
+            alt="Ridinator"
+            className={styles.guessCharImg}
+          />
+          <div className={styles.bubbleAndButtons}>
+            <div className={styles.guessBubble}>
+              <p className={styles.guessMessage}>
+                혹시....
+                <br />
+                이 작품이 아니냥?
+              </p>
+            </div>
+            <div className={styles.guessButtons}>
+              <button
+                className={`${styles.btn} ${styles.btnContinue}`}
+                onClick={handleContinue}
+                disabled={loading}
+              >
+                <span className={`${styles.cornerTL} ${styles.cBlue}`} />
+                <span className={`${styles.cornerTR} ${styles.cBlue}`} />
+                <span className={`${styles.cornerBL} ${styles.cBlue}`} />
+                <span className={`${styles.cornerBR} ${styles.cBlue}`} />
+                이어하기
+              </button>
+              <button
+                className={`${styles.btn} ${styles.btnRestart}`}
+                onClick={onRestart}
+                disabled={loading}
+              >
+                <span className={`${styles.cornerTL} ${styles.cPurple}`} />
+                <span className={`${styles.cornerTR} ${styles.cPurple}`} />
+                <span className={`${styles.cornerBL} ${styles.cPurple}`} />
+                <span className={`${styles.cornerBR} ${styles.cPurple}`} />
+                처음부터
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

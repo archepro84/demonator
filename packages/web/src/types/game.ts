@@ -29,6 +29,7 @@ export interface AnswerResponseQuestion {
   remainingCandidates: number;
   topCandidate: { title: string; confidence: number };
   questionNumber: number;
+  isTiebreaker?: boolean;
 }
 
 export interface AnswerResponseGuess {

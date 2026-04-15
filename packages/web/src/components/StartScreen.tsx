@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { CatCharacter } from './CatCharacter';
-import { SpeechBubble } from './SpeechBubble';
 import styles from './StartScreen.module.css';
 
 interface StartScreenProps {
@@ -10,6 +8,7 @@ interface StartScreenProps {
 export function StartScreen({ onStart }: StartScreenProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hovered, setHovered] = useState(false);
 
   const handleStart = async () => {
     setLoading(true);
@@ -26,31 +25,34 @@ export function StartScreen({ onStart }: StartScreenProps) {
   return (
     <div className={styles.container}>
       <div className={styles.content}>
-        <h1 className={styles.title}>Demonator</h1>
+        <h1 className={styles.title}>RIDINATOR</h1>
 
-        <div className={styles.characterGroup}>
-          <SpeechBubble direction="bottom">
-            <p className={styles.greeting}>
-              안녕하세요!
-              <br />
-              당신이 생각하는 웹소설을 맞춰볼게요!
-              <br />
-              함께 작품을 찾아볼까요?
-            </p>
-          </SpeechBubble>
+        <div
+          className={styles.interactiveArea}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <span className={styles.subtitle}>무엇이든 찾아준다냥</span>
 
-          <div className={styles.character}>
-            <CatCharacter size="large" />
+          <div className={styles.characterWrap}>
+            <img
+              src={hovered ? '/assets/ridinator-hover.png' : '/assets/ridinator-idle.png'}
+              alt="리디네이터"
+              className={styles.characterImg}
+              draggable={false}
+            />
+          </div>
+
+          <div className={`${styles.buttonWrap} ${hovered ? styles.buttonVisible : ''}`}>
+            <button
+              className={styles.startButton}
+              onClick={handleStart}
+              disabled={loading}
+            >
+              {loading ? '준비 중...' : '시작하기'}
+            </button>
           </div>
         </div>
-
-        <button
-          className={styles.startButton}
-          onClick={handleStart}
-          disabled={loading}
-        >
-          {loading ? '준비 중...' : '시작하기'}
-        </button>
 
         {error && <p className={styles.error}>{error}</p>}
       </div>

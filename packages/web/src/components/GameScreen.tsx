@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { CatCharacter } from './CatCharacter';
 import { SpeechBubble } from './SpeechBubble';
 import type { QuestionDTO, WorkDTO, Answer } from '../types/game';
 import styles from './GameScreen.module.css';
@@ -9,6 +8,7 @@ interface GameScreenProps {
   guess: { work: WorkDTO; confidence: number } | null;
   questionNumber: number;
   remainingCandidates: number;
+  isTiebreaker?: boolean;
   onAnswer: (answer: Answer) => Promise<void>;
   onGuessResponse: (correct: boolean) => Promise<void>;
 }
@@ -18,6 +18,7 @@ export function GameScreen({
   guess,
   questionNumber,
   remainingCandidates,
+  isTiebreaker,
   onAnswer,
   onGuessResponse,
 }: GameScreenProps) {
@@ -58,7 +59,17 @@ export function GameScreen({
 
       <div className={styles.gameArea}>
         <div className={styles.catSide}>
-          <CatCharacter size="medium" animated />
+          <img
+            src={
+              isTiebreaker
+                ? "/assets/ridinator-tiebreaker.png"
+                : questionNumber > 3
+                  ? "/assets/ridinator-angry.png"
+                  : "/assets/ridinator-hover.png"
+            }
+            alt="Ridinator"
+            className={styles.characterImg}
+          />
         </div>
 
         <div className={styles.interactionSide}>
@@ -106,30 +117,46 @@ export function GameScreen({
           ) : question ? (
             <div className={styles.questionMode}>
               <div className={styles.questionCard}>
+                <span className={styles.cornerTL} />
+                <span className={styles.cornerTR} />
+                <span className={styles.cornerBL} />
+                <span className={styles.cornerBR} />
                 <p className={styles.questionText} key={`q-${question.featureId}-${questionNumber}`}>
                   {question.text}
                 </p>
               </div>
               <div className={styles.answerButtons}>
                 <button
-                  className={styles.answerBtn}
+                  className={`${styles.answerBtn} ${styles.answerYes}`}
                   onClick={() => handleAnswer('yes')}
                   disabled={loading}
                 >
+                  <span className={`${styles.cornerTL} ${styles.cYes}`} />
+                  <span className={`${styles.cornerTR} ${styles.cYes}`} />
+                  <span className={`${styles.cornerBL} ${styles.cYes}`} />
+                  <span className={`${styles.cornerBR} ${styles.cYes}`} />
                   맞다냥
                 </button>
                 <button
-                  className={styles.answerBtn}
+                  className={`${styles.answerBtn} ${styles.answerNo}`}
                   onClick={() => handleAnswer('no')}
                   disabled={loading}
                 >
+                  <span className={`${styles.cornerTL} ${styles.cNo}`} />
+                  <span className={`${styles.cornerTR} ${styles.cNo}`} />
+                  <span className={`${styles.cornerBL} ${styles.cNo}`} />
+                  <span className={`${styles.cornerBR} ${styles.cNo}`} />
                   아니다냥
                 </button>
                 <button
-                  className={styles.answerBtn}
+                  className={`${styles.answerBtn} ${styles.answerMaybe}`}
                   onClick={() => handleAnswer('maybe')}
                   disabled={loading}
                 >
+                  <span className={`${styles.cornerTL} ${styles.cMaybe}`} />
+                  <span className={`${styles.cornerTR} ${styles.cMaybe}`} />
+                  <span className={`${styles.cornerBL} ${styles.cMaybe}`} />
+                  <span className={`${styles.cornerBR} ${styles.cMaybe}`} />
                   모르겠다냥
                 </button>
               </div>

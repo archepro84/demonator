@@ -31,6 +31,7 @@ export class SessionStore {
       pendingFeatureId: null,
       questionCount: 0,
       status: 'playing',
+      isTiebreaker: false,
       createdAt: new Date(),
     };
 

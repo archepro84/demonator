@@ -18,6 +18,7 @@ interface GameState {
   result: 'correct' | 'give_up' | null;
   guessedWork: WorkDTO | null;
   totalQuestions: number;
+  isTiebreaker: boolean;
 }
 
 const INITIAL_GAME_STATE: GameState = {
@@ -29,6 +30,7 @@ const INITIAL_GAME_STATE: GameState = {
   result: null,
   guessedWork: null,
   totalQuestions: 0,
+  isTiebreaker: false,
 };
 
 export default function App() {
@@ -58,6 +60,7 @@ export default function App() {
           currentGuess: null,
           questionNumber: res.questionNumber,
           remainingCandidates: res.remainingCandidates,
+          isTiebreaker: res.isTiebreaker ?? false,
         }));
       } else {
         setGame((prev) => ({
@@ -126,6 +129,7 @@ export default function App() {
           guess={game.currentGuess}
           questionNumber={game.questionNumber}
           remainingCandidates={game.remainingCandidates}
+          isTiebreaker={game.isTiebreaker}
           onAnswer={handleAnswer}
           onGuessResponse={handleGuessResponse}
         />
