@@ -260,7 +260,7 @@ program
         try {
           const result = await crawler.crawl({ externalId: id });
           const pageId = await crawler.saveToDb(id, result);
-          const parsed = await parser.parseFromPage(crawler.getPage());
+          const parsed = await parser.parseFromPage(crawler.getPage(), id);
           await parser.saveParseResult(pageId, id, parsed);
           console.log(`  OK: ${parsed.title ?? id}`);
           success++;
@@ -328,7 +328,7 @@ program
           const result = await crawler.crawl({ externalId: id });
           const pageId = await crawler.saveToDb(id, result);
 
-          const parsed = await parser.parseFromPage(crawler.getPage());
+          const parsed = await parser.parseFromPage(crawler.getPage(), id);
           await parser.saveParseResult(pageId, id, parsed);
         } catch (err) {
           failed++;
@@ -468,7 +468,7 @@ program
           console.log(`[${i + 1}/${ids.length}] ${id}`);
           const result = await detailCrawler.crawl({ externalId: id });
           const pageId = await detailCrawler.saveToDb(id, result);
-          const parsed = await parser.parseFromPage(detailCrawler.getPage());
+          const parsed = await parser.parseFromPage(detailCrawler.getPage(), id);
           await parser.saveParseResult(pageId, id, parsed);
           if (i < ids.length - 1) await new Promise((r) => setTimeout(r, 1000));
         }
