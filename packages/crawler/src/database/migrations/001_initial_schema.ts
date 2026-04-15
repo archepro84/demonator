@@ -1,7 +1,7 @@
 import { Kysely, sql } from 'kysely';
 
 export async function up(db: Kysely<unknown>): Promise<void> {
-  // Raw Zone
+  // ── Raw Zone ──
 
   await db.schema
     .createTable('raw_list_items')
@@ -11,6 +11,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('external_id', 'varchar(100)', (col) => col.notNull())
     .addColumn('title', 'varchar(255)')
     .addColumn('author', 'varchar(255)')
+    .addColumn('content_type', 'varchar(20)', (col) => col.defaultTo('ebook').notNull())
     .addColumn('crawled_at', 'timestamp', (col) =>
       col.defaultTo(sql`NOW()`).notNull()
     )
@@ -26,7 +27,6 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('platform', 'varchar(50)', (col) => col.notNull())
     .addColumn('external_id', 'varchar(100)', (col) => col.notNull())
     .addColumn('url', 'text', (col) => col.notNull())
-    .addColumn('html_content', 'text', (col) => col.notNull())
     .addColumn('crawled_at', 'timestamp', (col) =>
       col.defaultTo(sql`NOW()`).notNull()
     )
@@ -50,12 +50,24 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('volume_count', 'integer')
     .addColumn('cover_image_url', 'text')
     .addColumn('introduction_images', sql`text[]`)
+    .addColumn('content_type', 'varchar(20)')
     .addColumn('parsed_at', 'timestamp', (col) =>
       col.defaultTo(sql`NOW()`).notNull()
     )
     .execute();
 
-  // Refined Zone
+  await db.schema
+    .createTable('raw_work_enrichments')
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('external_id', 'varchar(100)', (col) => col.notNull().unique())
+    .addColumn('tags', sql`text[]`)
+    .addColumn('negative_tags', sql`text[]`)
+    .addColumn('created_at', 'timestamp', (col) =>
+      col.defaultTo(sql`NOW()`).notNull()
+    )
+    .execute();
+
+  // ── Refined Zone ──
 
   await db.schema
     .createTable('refined_work_feature_runs')
@@ -99,7 +111,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     )
     .execute();
 
-  // Serving Zone
+  // ── Serving Zone ──
 
   await db.schema
     .createTable('works')
@@ -127,6 +139,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn('name', 'varchar(100)', (col) => col.notNull().unique())
     .addColumn('category', 'varchar(50)', (col) => col.notNull())
     .addColumn('display_name', 'varchar(100)', (col) => col.notNull())
+    .addColumn('keywords', sql`text[]`)
+    .addColumn('questions', sql`text[]`)
     .addColumn('mutual_exclusive_group', 'varchar(50)')
     .addColumn('created_at', 'timestamp', (col) =>
       col.defaultTo(sql`NOW()`).notNull()
@@ -151,7 +165,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     ])
     .execute();
 
-  // Indexes
+  // ── Indexes ──
+
   await db.schema
     .createIndex('idx_raw_list_items_external_id')
     .on('raw_list_items')
@@ -178,6 +193,7 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   await db.schema.dropTable('refined_work_feature_rejections').ifExists().execute();
   await db.schema.dropTable('refined_work_feature_candidates').ifExists().execute();
   await db.schema.dropTable('refined_work_feature_runs').ifExists().execute();
+  await db.schema.dropTable('raw_work_enrichments').ifExists().execute();
   await db.schema.dropTable('raw_work_parse_results').ifExists().execute();
   await db.schema.dropTable('raw_work_pages').ifExists().execute();
   await db.schema.dropTable('raw_list_items').ifExists().execute();
