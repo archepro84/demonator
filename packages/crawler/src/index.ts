@@ -167,7 +167,7 @@ program
   .command('crawl:books')
   .description('Crawl specific books by ID list (registers to raw_list_items + crawl detail + parse)')
   .option('-i, --ids <ids...>', 'Book IDs (space-separated)')
-  .option('-f, --file <path>', 'File with one book ID per line')
+  .option('-f, --file <path>', 'JSON or text file with book IDs')
   .option('--skip-existing', 'Skip books already parsed', false)
   .action(async (options) => {
     let ids: string[] = [];
@@ -178,10 +178,20 @@ program
 
     if (options.file) {
       const content = await readFile(options.file, 'utf-8');
-      const fileIds = content
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line && !line.startsWith('#'));
+      const filePath: string = options.file;
+      let fileIds: string[];
+
+      if (filePath.endsWith('.json')) {
+        const parsed = JSON.parse(content);
+        const arr: unknown[] = Array.isArray(parsed) ? parsed : parsed.external_ids ?? parsed.ids ?? [];
+        fileIds = arr.map(String).filter(Boolean);
+      } else {
+        fileIds = content
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line && !line.startsWith('#'));
+      }
+
       ids = ids.concat(fileIds);
     }
 

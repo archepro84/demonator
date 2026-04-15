@@ -13,6 +13,7 @@
     "migrate": "tsx src/database/migrate.ts",
     "crawl:list": "tsx src/index.ts crawl:list",
     "crawl:detail": "tsx src/index.ts crawl:detail",
+    "crawl:books": "tsx src/index.ts crawl:books",
     "validate": "tsx src/index.ts validate:list",
     "publish": "tsx src/index.ts publish"
   },
