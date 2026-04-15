@@ -1,6 +1,7 @@
 import { Page } from 'playwright';
 import { db } from '../../database/kysely';
 import type { ParsedWorkData } from '../../schemas/raw.schema';
+import type { RidiContentType } from './ridi-list.crawler';
 
 const NOISE_KEYWORDS = new Set([
   // 플랫폼/포맷
@@ -18,7 +19,7 @@ const PRICE_OR_VOLUME_RE = /^\d+%할인$|^\d+[만천]?원|^\d+~|^\d+권이상$/;
 
 export class RidiParser {
   async parseFromPage(page: Page): Promise<ParsedWorkData> {
-    const [title, coverImageUrl, author, description, keywords, introductionImages, volumeCount] =
+    const [title, coverImageUrl, author, description, keywords, introductionImages, volumeCount, contentType] =
       await Promise.all([
         this.extractTitle(page),
         this.metaContent(page, 'property', 'og:image'),
@@ -27,9 +28,10 @@ export class RidiParser {
         this.extractKeywords(page),
         this.extractIntroductionImages(page),
         this.extractVolumeCount(page),
+        this.detectContentType(page),
       ]);
 
-    return { title, author, description, keywords, volumeCount, coverImageUrl, introductionImages };
+    return { title, author, description, keywords, volumeCount, coverImageUrl, introductionImages, contentType };
   }
 
   private async metaContent(page: Page, attr: string, value: string): Promise<string | undefined> {
@@ -106,6 +108,28 @@ export class RidiParser {
     return srcs;
   }
 
+  private async detectContentType(page: Page): Promise<RidiContentType | undefined> {
+    const breadcrumb = await page.locator('nav[aria-label="breadcrumb"], ol[class*="breadcrumb"], [class*="Breadcrumb"]').textContent().catch(() => null);
+    if (breadcrumb) {
+      if (/웹소설/.test(breadcrumb)) return 'webnovel';
+      if (/e북|ebook/i.test(breadcrumb)) return 'ebook';
+    }
+
+    const categoryText = await page.locator('#ISLANDS__Header').textContent().catch(() => null);
+    if (categoryText) {
+      if (/웹소설/.test(categoryText)) return 'webnovel';
+      if (/e북/i.test(categoryText)) return 'ebook';
+    }
+
+    const metaKeywords = await this.metaContent(page, 'name', 'keywords');
+    if (metaKeywords) {
+      if (/웹소설/.test(metaKeywords)) return 'webnovel';
+      if (/e북/.test(metaKeywords)) return 'ebook';
+    }
+
+    return undefined;
+  }
+
   private async extractVolumeCount(page: Page): Promise<number | undefined> {
     const headerText = await page.locator('#ISLANDS__Header').textContent().catch(() => null);
     if (headerText) {
@@ -129,11 +153,13 @@ export class RidiParser {
         cover_image_url: data.coverImageUrl ?? null,
         introduction_images:
           data.introductionImages.length > 0 ? data.introductionImages : null,
+        content_type: data.contentType ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
 
-    console.log(`Saved parse result for ${externalId}: "${data.title}"`);
+    const typeLabel = data.contentType ? ` [${data.contentType}]` : '';
+    console.log(`Saved parse result for ${externalId}: "${data.title}"${typeLabel}`);
     return result.id;
   }
 }

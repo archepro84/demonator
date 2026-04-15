@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import { readFile } from 'node:fs/promises';
 import { Command } from 'commander';
-import { RidiGenre, RidiOrder, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
+import { RidiGenre, RidiOrder, RidiContentType, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
 import { RidiCrawler } from './crawlers/ridi/ridi.crawler';
 import { RidiParser } from './crawlers/ridi/ridi.parser';
 import { ListValidator } from './validators/list-validator';
@@ -33,6 +33,11 @@ program
   .option('-p, --page <page>', 'Page number', '1')
   .option('--pages <count>', 'Number of pages to crawl', '1')
   .option('-l, --limit <count>', 'Limit total items per genre (max 60 per page)')
+  .option(
+    '-t, --type <type>',
+    `Content type (${Object.values(RidiContentType).join(', ')}, all)`,
+    RidiContentType.EBOOK
+  )
   .action(async (options) => {
     const allGenres = Object.values(RidiGenre) as string[];
     const validGenres = ['all', ...allGenres];
@@ -47,10 +52,21 @@ program
       console.error(`Valid orders: ${validOrders.join(', ')}`);
       process.exit(1);
     }
+    const allContentTypes = Object.values(RidiContentType) as string[];
+    const validTypes = ['all', ...allContentTypes];
+    if (!validTypes.includes(options.type)) {
+      console.error(`Invalid type: ${options.type}`);
+      console.error(`Valid types: ${validTypes.join(', ')}`);
+      process.exit(1);
+    }
+
     const genres: RidiGenre[] = options.genre === 'all'
       ? allGenres as RidiGenre[]
       : [options.genre as RidiGenre];
     const order = options.order as RidiOrder;
+    const contentTypes: RidiContentType[] = options.type === 'all'
+      ? allContentTypes as RidiContentType[]
+      : [options.type as RidiContentType];
 
     const ITEMS_PER_PAGE = 60;
     const startPage = parseInt(options.page, 10);
@@ -63,33 +79,36 @@ program
     await crawler.init();
 
     try {
-      for (const genre of genres) {
-        if (genres.length > 1) console.log(`\n=== Genre: ${genre} ===`);
+      for (const contentType of contentTypes) {
+        for (const genre of genres) {
+          const label = `${genre} [${contentType}]`;
+          if (genres.length > 1 || contentTypes.length > 1) console.log(`\n=== ${label} ===`);
 
-        let collected: ListItem[] = [];
+          let collected: ListItem[] = [];
 
-        for (let i = 0; i < pageCount; i++) {
-          const page = startPage + i;
-          const result = await crawler.crawl({ genre, page, order });
-          const items = crawler.parseListItems(result.html);
-          collected = collected.concat(items);
+          for (let i = 0; i < pageCount; i++) {
+            const page = startPage + i;
+            const result = await crawler.crawl({ genre, page, order, contentType });
+            const items = crawler.parseListItems(result.html, contentType);
+            collected = collected.concat(items);
 
-          if (limit && collected.length >= limit) break;
+            if (limit && collected.length >= limit) break;
 
-          if (i < pageCount - 1) {
+            if (i < pageCount - 1) {
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+
+          if (limit) {
+            collected = collected.slice(0, limit);
+          }
+
+          await crawler.saveToDb({ genre, page: startPage, order, contentType }, collected);
+          console.log(`${label}: Saved ${collected.length} items`);
+
+          if (genres.length > 1 || contentTypes.length > 1) {
             await new Promise((r) => setTimeout(r, 1000));
           }
-        }
-
-        if (limit) {
-          collected = collected.slice(0, limit);
-        }
-
-        await crawler.saveToDb({ genre, page: startPage, order }, collected);
-        console.log(`Genre ${genre}: Saved ${collected.length} items`);
-
-        if (genres.length > 1) {
-          await new Promise((r) => setTimeout(r, 1000));
         }
       }
     } finally {
@@ -324,7 +343,7 @@ program
         console.log(`\nDry run: Would publish ${stats.unpublished} works`);
       } else {
         const result = await publisher.publishAll('ridi');
-        console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}`);
+        console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}, Deduped: ${result.deduped}`);
       }
     } finally {
       await closeDb();
@@ -337,17 +356,19 @@ program
   .requiredOption('-g, --genre <genre>', 'Genre code')
   .option('--pages <count>', 'Number of list pages', '1')
   .option('--limit <limit>', 'Limit detail crawls')
+  .option('-t, --type <type>', 'Content type (ebook, webnovel)', RidiContentType.EBOOK)
   .action(async (options) => {
-    console.log('=== Step 1: Crawl List ===');
+    const contentType = options.type as RidiContentType;
+    console.log(`=== Step 1: Crawl List [${contentType}] ===`);
     const listCrawler = new RidiListCrawler();
     await listCrawler.init();
 
     try {
       const pageCount = parseInt(options.pages, 10);
       for (let page = 1; page <= pageCount; page++) {
-        const result = await listCrawler.crawl({ genre: options.genre, page });
-        const items = listCrawler.parseListItems(result.html);
-        await listCrawler.saveToDb({ genre: options.genre, page }, items);
+        const result = await listCrawler.crawl({ genre: options.genre, page, contentType });
+        const items = listCrawler.parseListItems(result.html, contentType);
+        await listCrawler.saveToDb({ genre: options.genre, page, contentType }, items);
         console.log(`Page ${page}: ${items.length} items`);
         if (page < pageCount) await new Promise((r) => setTimeout(r, 1000));
       }
@@ -388,7 +409,7 @@ program
     console.log('\n=== Step 3: Publish ===');
     const publisher = new Publisher();
     const publishResult = await publisher.publishAll('ridi');
-    console.log(`Published: ${publishResult.published}, Skipped: ${publishResult.skipped}`);
+    console.log(`Published: ${publishResult.published}, Skipped: ${publishResult.skipped}, Deduped: ${publishResult.deduped}`);
 
     await closeDb();
     console.log('\n=== Pipeline Complete ===');

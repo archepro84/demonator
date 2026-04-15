@@ -2,6 +2,13 @@ import { BaseCrawler, CrawlResult } from '../base.crawler';
 import { sql } from 'kysely';
 import { db } from '../../database/kysely';
 
+export const RidiContentType = {
+  EBOOK: 'ebook',
+  WEBNOVEL: 'webnovel',
+} as const;
+
+export type RidiContentType = (typeof RidiContentType)[keyof typeof RidiContentType];
+
 export const RidiGenre = {
   FANTASY: 'fantasy',
   ROMANCE_FANTASY: 'romance_fantasy',
@@ -10,6 +17,13 @@ export const RidiGenre = {
 } as const;
 
 export type RidiGenre = (typeof RidiGenre)[keyof typeof RidiGenre];
+
+const WEBNOVEL_SLUG: Record<RidiGenre, string> = {
+  [RidiGenre.FANTASY]: 'fantasy_serial',
+  [RidiGenre.ROMANCE_FANTASY]: 'romance_fantasy_serial',
+  [RidiGenre.ROMANCE]: 'romance_serial',
+  [RidiGenre.BL]: 'bl-webnovel',
+};
 
 export const RidiOrder = {
   WEEKLY: 'weekly',
@@ -23,6 +37,7 @@ export interface RidiListCrawlOptions {
   genre: RidiGenre;
   page: number;
   order?: RidiOrder;
+  contentType?: RidiContentType;
   adultExclude?: boolean;
 }
 
@@ -30,19 +45,21 @@ export interface ListItem {
   externalId: string;
   title?: string;
   author?: string;
+  contentType?: RidiContentType;
 }
 
 export class RidiListCrawler extends BaseCrawler {
   private readonly baseUrl = 'https://ridibooks.com';
 
   buildUrl(options: RidiListCrawlOptions): string {
-    const { genre, page, order = RidiOrder.STEADY, adultExclude = false } = options;
+    const { genre, page, order = RidiOrder.STEADY, contentType = RidiContentType.EBOOK, adultExclude = false } = options;
+    const slug = contentType === RidiContentType.WEBNOVEL ? WEBNOVEL_SLUG[genre] : genre;
     const params = new URLSearchParams({
       order,
       adult_exclude: adultExclude ? 'y' : 'n',
       page: String(page),
     });
-    return `${this.baseUrl}/bestsellers/${genre}?${params.toString()}`;
+    return `${this.baseUrl}/bestsellers/${slug}?${params.toString()}`;
   }
 
   async crawl(options: RidiListCrawlOptions): Promise<CrawlResult> {
@@ -53,11 +70,17 @@ export class RidiListCrawler extends BaseCrawler {
     return result;
   }
 
-  parseListItems(html: string): ListItem[] {
-    const nextDataItems = this.parseFromNextData(html);
-    if (nextDataItems.length > 0) return nextDataItems;
+  parseListItems(html: string, contentType?: RidiContentType): ListItem[] {
+    const items = this.parseFromNextData(html);
+    const result = items.length > 0 ? items : this.parseFromHref(html);
 
-    return this.parseFromHref(html);
+    if (contentType) {
+      for (const item of result) {
+        item.contentType = contentType;
+      }
+    }
+
+    return result;
   }
 
   private parseFromNextData(html: string): ListItem[] {
@@ -129,6 +152,8 @@ export class RidiListCrawler extends BaseCrawler {
       return;
     }
 
+    const contentType = options.contentType ?? RidiContentType.EBOOK;
+
     await db
       .insertInto('raw_list_items')
       .values(
@@ -138,6 +163,7 @@ export class RidiListCrawler extends BaseCrawler {
           external_id: item.externalId,
           title: item.title ?? null,
           author: item.author ?? null,
+          content_type: item.contentType ?? contentType,
         }))
       )
       .onConflict((oc) =>
@@ -145,11 +171,12 @@ export class RidiListCrawler extends BaseCrawler {
           list_type: 'bestseller',
           title: eb.ref('excluded.title'),
           author: eb.ref('excluded.author'),
+          content_type: eb.ref('excluded.content_type'),
           crawled_at: sql`NOW()`,
         }))
       )
       .execute();
 
-    console.log(`Saved ${items.length} items from page ${options.page}`);
+    console.log(`Saved ${items.length} items from page ${options.page} [${contentType}]`);
   }
 }

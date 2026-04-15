@@ -9,6 +9,7 @@ export interface RawListItemsTable {
   external_id: string;
   title: string | null;
   author: string | null;
+  content_type: Generated<string>;
   crawled_at: Generated<Date>;
 }
 
@@ -32,6 +33,7 @@ export interface RawWorkParseResultsTable {
   volume_count: number | null;
   cover_image_url: string | null;
   introduction_images: string[] | null;
+  content_type: string | null;
   parsed_at: Generated<Date>;
 }
 
