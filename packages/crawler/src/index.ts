@@ -413,7 +413,13 @@ program
   .requiredOption('-g, --genre <genre>', 'Genre code')
   .option('--pages <count>', 'Number of list pages', '1')
   .option('--limit <limit>', 'Limit detail crawls')
+  .option('--auth [path]', 'Path to auth storage state (uses default if no path given)')
   .action(async (options) => {
+    const storageStatePath = await resolveAuthPath(
+      typeof options.auth === 'string' ? options.auth : undefined,
+    );
+    if (storageStatePath) console.log(`Using auth: ${storageStatePath}`);
+
     console.log('=== Step 1: Crawl List ===');
     const listCrawler = new RidiListCrawler();
     await listCrawler.init({ storageStatePath });
