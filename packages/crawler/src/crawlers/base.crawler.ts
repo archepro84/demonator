@@ -1,4 +1,4 @@
-import { Browser, chromium, Page } from 'playwright';
+import { Browser, BrowserContext, chromium, Page } from 'playwright';
 
 export interface CrawlResult {
   url: string;
@@ -6,8 +6,13 @@ export interface CrawlResult {
   crawledAt: Date;
 }
 
+export interface CrawlerInitOptions {
+  storageStatePath?: string;
+}
+
 export abstract class BaseCrawler {
   protected browser: Browser | null = null;
+  protected context: BrowserContext | null = null;
   protected page: Page | null = null;
 
   getPage(): Page {
@@ -15,11 +20,15 @@ export abstract class BaseCrawler {
     return this.page;
   }
 
-  async init(): Promise<void> {
+  async init(options?: CrawlerInitOptions): Promise<void> {
     this.browser = await chromium.launch({
       headless: true,
     });
-    this.page = await this.browser.newPage();
+
+    this.context = await this.browser.newContext(
+      options?.storageStatePath ? { storageState: options.storageStatePath } : undefined,
+    );
+    this.page = await this.context.newPage();
 
     await this.page.setExtraHTTPHeaders({
       'Accept-Language': 'ko-KR,ko;q=0.9',
@@ -30,6 +39,7 @@ export abstract class BaseCrawler {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
+      this.context = null;
       this.page = null;
     }
   }

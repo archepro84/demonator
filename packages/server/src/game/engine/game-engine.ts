@@ -18,7 +18,7 @@ import type {
   GuessResponse,
 } from '../../session/session.types';
 
-const MAX_QUESTIONS = 20;
+const MAX_QUESTIONS = 50;
 const GUESS_THRESHOLD = 0.6;
 const TOP3_THRESHOLD = 0.8;
 const MAX_GUESSES = 10;

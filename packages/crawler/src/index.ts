@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { readFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
+import { readFile, mkdir, access } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import { Command } from 'commander';
+import { chromium } from 'playwright';
 import { RidiGenre, RidiOrder, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
 import { RidiCrawler } from './crawlers/ridi/ridi.crawler';
 import { RidiParser } from './crawlers/ridi/ridi.parser';
@@ -10,12 +13,55 @@ import { Publisher } from './refiners/publisher';
 import { EnrichmentImportSchema } from './schemas/enrichment.schema';
 import { closeDb, db } from './database/kysely';
 
+const DEFAULT_AUTH_PATH = resolve(import.meta.dirname ?? '.', '../.auth/ridi-storage.json');
+
+async function resolveAuthPath(authOption?: string): Promise<string | undefined> {
+  if (authOption) return resolve(authOption);
+  try {
+    await access(DEFAULT_AUTH_PATH);
+    return DEFAULT_AUTH_PATH;
+  } catch {
+    return undefined;
+  }
+}
+
 const program = new Command();
 
 program
   .name('demonator-crawler')
   .description('Ridi crawler for demonator')
   .version('1.0.0');
+
+program
+  .command('auth:login')
+  .description('Open browser to log in to Ridi and save session for adult content access')
+  .option('-o, --output <path>', 'Output path for storage state', DEFAULT_AUTH_PATH)
+  .action(async (options) => {
+    const outputPath = resolve(options.output);
+    await mkdir(dirname(outputPath), { recursive: true });
+
+    const browser = await chromium.launch({ headless: false });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await page.goto('https://ridibooks.com/account/login', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30_000,
+    });
+
+    console.log('\n브라우저가 열렸습니다.');
+    console.log('1. Ridi 계정으로 로그인하세요.');
+    console.log('2. 성인인증이 필요하면 완료하세요.');
+    console.log('3. 완료 후 이 터미널에서 Enter를 누르세요.\n');
+
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    await new Promise<void>((r) => rl.question('', () => { rl.close(); r(); }));
+
+    await context.storageState({ path: outputPath });
+    await browser.close();
+
+    console.log(`세션이 저장되었습니다: ${outputPath}`);
+  });
 
 program
   .command('crawl:list')
@@ -102,17 +148,28 @@ program
   .description('Crawl work detail pages')
   .option('-i, --id <id>', 'External ID to crawl')
   .option('--new', 'Crawl only new works from list', false)
+  .option('--recrawl', 'Re-crawl works with missing images (cover or introduction)', false)
   .option('--limit <limit>', 'Limit number of works to crawl')
+  .option('--auth [path]', 'Path to auth storage state (uses default if no path given)')
   .action(async (options) => {
+    const storageStatePath = await resolveAuthPath(
+      typeof options.auth === 'string' ? options.auth : undefined,
+    );
+    if (storageStatePath) console.log(`Using auth: ${storageStatePath}`);
+
     const crawler = new RidiCrawler();
     const parser = new RidiParser();
-    await crawler.init();
+    await crawler.init({ storageStatePath });
 
     try {
       let ids: string[] = [];
 
       if (options.id) {
         ids = [options.id];
+      } else if (options.recrawl) {
+        const validator = new ListValidator();
+        ids = await validator.findWorksWithMissingImages('ridi');
+        console.log(`Found ${ids.length} works with missing images to re-crawl`);
       } else if (options.new) {
         const validator = new ListValidator();
         const result = await validator.findNewWorks('ridi');
@@ -228,10 +285,16 @@ program
   .requiredOption('-g, --genre <genre>', 'Genre code')
   .option('--pages <count>', 'Number of list pages', '1')
   .option('--limit <limit>', 'Limit detail crawls')
+  .option('--auth [path]', 'Path to auth storage state (uses default if no path given)')
   .action(async (options) => {
+    const storageStatePath = await resolveAuthPath(
+      typeof options.auth === 'string' ? options.auth : undefined,
+    );
+    if (storageStatePath) console.log(`Using auth: ${storageStatePath}`);
+
     console.log('=== Step 1: Crawl List ===');
     const listCrawler = new RidiListCrawler();
-    await listCrawler.init();
+    await listCrawler.init({ storageStatePath });
 
     try {
       const pageCount = parseInt(options.pages, 10);
@@ -259,7 +322,7 @@ program
     if (ids.length > 0) {
       const detailCrawler = new RidiCrawler();
       const parser = new RidiParser();
-      await detailCrawler.init();
+      await detailCrawler.init({ storageStatePath });
 
       try {
         for (let i = 0; i < ids.length; i++) {

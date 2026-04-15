@@ -278,3 +278,6 @@ pyrightconfig.json
 # Temporary
 .tmp
 .dump
+
+# Crawler auth storage
+.auth/

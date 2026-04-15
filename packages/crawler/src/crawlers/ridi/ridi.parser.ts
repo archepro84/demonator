@@ -15,13 +15,14 @@ const NOISE_KEYWORDS = new Set([
 ]);
 const NOISE_RE = /^(평점|리뷰|별점)\d+/;
 const PRICE_OR_VOLUME_RE = /^\d+%할인$|^\d+[만천]?원|^\d+~|^\d+권이상$/;
+const ADULT_PLACEHOLDER_RE = /cover_adult/;
 
 export class RidiParser {
   async parseFromPage(page: Page): Promise<ParsedWorkData> {
     const [title, coverImageUrl, author, description, keywords, introductionImages, volumeCount] =
       await Promise.all([
         this.extractTitle(page),
-        this.metaContent(page, 'property', 'og:image'),
+        this.extractCoverImage(page),
         this.extractAuthor(page),
         this.extractDescription(page),
         this.extractKeywords(page),
@@ -36,6 +37,30 @@ export class RidiParser {
     const el = page.locator(`meta[${attr}="${value}"]`);
     const content = await el.getAttribute('content').catch(() => null);
     return content ?? undefined;
+  }
+
+  private async extractCoverImage(page: Page): Promise<string | undefined> {
+    const ogImage = await this.metaContent(page, 'property', 'og:image');
+    if (ogImage && !ADULT_PLACEHOLDER_RE.test(ogImage)) {
+      return ogImage;
+    }
+
+    const coverSelectors = [
+      '#ISLANDS__Header img[src*="/cover/"]',
+      'img[src*="/cover/"][src*="xlarge"]',
+      'img[src*="/cover/"]',
+    ];
+    for (const selector of coverSelectors) {
+      const img = page.locator(selector).first();
+      if (await img.count() > 0) {
+        const src = await img.getAttribute('src').catch(() => null);
+        if (src && !src.startsWith('data:') && !ADULT_PLACEHOLDER_RE.test(src)) {
+          return src;
+        }
+      }
+    }
+
+    return ogImage;
   }
 
   private async extractTitle(page: Page): Promise<string> {
@@ -116,6 +141,11 @@ export class RidiParser {
   }
 
   async saveParseResult(rawPageId: number, externalId: string, data: ParsedWorkData): Promise<number> {
+    await db
+      .deleteFrom('raw_work_parse_results')
+      .where('raw_page_id', '=', rawPageId)
+      .execute();
+
     const result = await db
       .insertInto('raw_work_parse_results')
       .values({

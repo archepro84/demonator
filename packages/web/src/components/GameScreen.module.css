@@ -38,10 +38,11 @@
 
 .catSide {
   flex-shrink: 0;
+  margin-top: -150px;
 }
 
 .characterImg {
-  width: 350px;
+  width: 450px;
   height: auto;
   object-fit: contain;
   animation: float 3s ease-in-out infinite;

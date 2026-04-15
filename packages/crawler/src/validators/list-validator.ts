@@ -42,6 +42,23 @@ export class ListValidator {
     };
   }
 
+  async findWorksWithMissingImages(platform: string): Promise<string[]> {
+    const results = await db
+      .selectFrom('raw_work_parse_results')
+      .innerJoin('raw_work_pages', 'raw_work_pages.id', 'raw_work_parse_results.raw_page_id')
+      .select('raw_work_parse_results.external_id')
+      .where('raw_work_pages.platform', '=', platform)
+      .where((eb) =>
+        eb.or([
+          eb('raw_work_parse_results.cover_image_url', 'is', null),
+          eb('raw_work_parse_results.introduction_images', 'is', null),
+        ]),
+      )
+      .execute();
+
+    return results.map((r) => r.external_id);
+  }
+
   async findUnparsedWorks(platform: string): Promise<string[]> {
     // Find work pages that don't have parse results
     const unparsed = await db
