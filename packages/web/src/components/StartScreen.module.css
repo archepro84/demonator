@@ -10,60 +10,79 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   animation: fadeIn 0.8s ease-out;
 }
 
 .title {
   margin: 0;
-  font-size: 2.8rem;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: -1px;
+  font-size: 48px;
+  font-weight: 700;
+  color: #4DA3FF;
+  letter-spacing: 2px;
 }
 
-.greeting {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #1a1a2e;
-  text-align: center;
-  line-height: 1.8;
-}
-
-.characterGroup {
+.interactiveArea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4DA3FF;
+}
+
+.characterWrap {
   animation: float 3s ease-in-out infinite;
 }
 
-.character {
-  margin: 4px 0;
+.characterImg {
+  width: 220px;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.25));
+  transition: opacity 0.25s ease;
+}
+
+.buttonWrap {
+  margin-top: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.buttonVisible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .startButton {
-  margin-top: 12px;
-  padding: 16px 52px;
-  font-size: 1.2rem;
+  width: 165px;
+  height: 45px;
+  font-size: 1rem;
   font-weight: 700;
   font-family: inherit;
-  color: #1a1a2e;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
-  border-radius: 50px;
+  color: #4DA3FF;
+  background: transparent;
+  border: 1.5px solid #4DA3FF;
+  border-radius: 8px;
   cursor: pointer;
-  transition: opacity 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s, color 0.2s;
 }
 
 .startButton:hover:not(:disabled) {
-  opacity: 0.75;
+  background: rgba(77, 163, 255, 0.1);
 }
 
 .startButton:active:not(:disabled) {
-  opacity: 0.6;
+  background: rgba(77, 163, 255, 0.2);
 }
 
 .startButton:disabled {
