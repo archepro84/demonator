@@ -5,12 +5,13 @@ import { readFile, mkdir, access } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { Command } from 'commander';
 import { chromium } from 'playwright';
-import { RidiGenre, RidiOrder, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
+import { RidiGenre, RidiOrder, RidiContentType, RidiListCrawler, type ListItem } from './crawlers/ridi/ridi-list.crawler';
 import { RidiCrawler } from './crawlers/ridi/ridi.crawler';
 import { RidiParser } from './crawlers/ridi/ridi.parser';
 import { ListValidator } from './validators/list-validator';
 import { Publisher } from './refiners/publisher';
 import { EnrichmentImportSchema } from './schemas/enrichment.schema';
+import { sql } from 'kysely';
 import { closeDb, db } from './database/kysely';
 
 const DEFAULT_AUTH_PATH = resolve(import.meta.dirname ?? '.', '../.auth/ridi-storage.json');
@@ -78,6 +79,11 @@ program
   .option('-p, --page <page>', 'Page number', '1')
   .option('--pages <count>', 'Number of pages to crawl', '1')
   .option('-l, --limit <count>', 'Limit total items per genre (max 60 per page)')
+  .option(
+    '-t, --type <type>',
+    `Content type (${Object.values(RidiContentType).join(', ')}, all)`,
+    RidiContentType.EBOOK
+  )
   .action(async (options) => {
     const allGenres = Object.values(RidiGenre) as string[];
     const validGenres = ['all', ...allGenres];
@@ -92,10 +98,21 @@ program
       console.error(`Valid orders: ${validOrders.join(', ')}`);
       process.exit(1);
     }
+    const allContentTypes = Object.values(RidiContentType) as string[];
+    const validTypes = ['all', ...allContentTypes];
+    if (!validTypes.includes(options.type)) {
+      console.error(`Invalid type: ${options.type}`);
+      console.error(`Valid types: ${validTypes.join(', ')}`);
+      process.exit(1);
+    }
+
     const genres: RidiGenre[] = options.genre === 'all'
       ? allGenres as RidiGenre[]
       : [options.genre as RidiGenre];
     const order = options.order as RidiOrder;
+    const contentTypes: RidiContentType[] = options.type === 'all'
+      ? allContentTypes as RidiContentType[]
+      : [options.type as RidiContentType];
 
     const ITEMS_PER_PAGE = 60;
     const startPage = parseInt(options.page, 10);
@@ -108,32 +125,141 @@ program
     await crawler.init();
 
     try {
-      for (const genre of genres) {
-        if (genres.length > 1) console.log(`\n=== Genre: ${genre} ===`);
+      for (const contentType of contentTypes) {
+        for (const genre of genres) {
+          const label = `${genre} [${contentType}]`;
+          if (genres.length > 1 || contentTypes.length > 1) console.log(`\n=== ${label} ===`);
 
-        let collected: ListItem[] = [];
+          let collected: ListItem[] = [];
 
-        for (let i = 0; i < pageCount; i++) {
-          const page = startPage + i;
-          const result = await crawler.crawl({ genre, page, order });
-          const items = crawler.parseListItems(result.html);
-          collected = collected.concat(items);
+          for (let i = 0; i < pageCount; i++) {
+            const page = startPage + i;
+            const result = await crawler.crawl({ genre, page, order, contentType });
+            const items = crawler.parseListItems(result.html, contentType);
+            collected = collected.concat(items);
 
-          if (limit && collected.length >= limit) break;
+            if (limit && collected.length >= limit) break;
 
-          if (i < pageCount - 1) {
+            if (i < pageCount - 1) {
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+
+          if (limit) {
+            collected = collected.slice(0, limit);
+          }
+
+          await crawler.saveToDb({ genre, page: startPage, order, contentType }, collected);
+          console.log(`${label}: Saved ${collected.length} items`);
+
+          if (genres.length > 1 || contentTypes.length > 1) {
             await new Promise((r) => setTimeout(r, 1000));
           }
         }
+      }
+    } finally {
+      await crawler.close();
+      await closeDb();
+    }
+  });
 
-        if (limit) {
-          collected = collected.slice(0, limit);
+program
+  .command('crawl:books')
+  .description('Crawl specific books by ID list (registers to raw_list_items + crawl detail + parse)')
+  .option('-i, --ids <ids...>', 'Book IDs (space-separated)')
+  .option('-f, --file <path>', 'File with one book ID per line')
+  .option('--skip-existing', 'Skip books already parsed', false)
+  .action(async (options) => {
+    let ids: string[] = [];
+
+    if (options.ids) {
+      ids = options.ids.flatMap((id: string) => id.split(',').map((s: string) => s.trim()).filter(Boolean));
+    }
+
+    if (options.file) {
+      const content = await readFile(options.file, 'utf-8');
+      const fileIds = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'));
+      ids = ids.concat(fileIds);
+    }
+
+    ids = [...new Set(ids)];
+
+    if (ids.length === 0) {
+      console.error('No book IDs provided. Use -i or -f option.');
+      process.exit(1);
+    }
+
+    console.log(`\n=== Crawling ${ids.length} book(s) ===\n`);
+
+    if (options.skipExisting) {
+      const existing = await db
+        .selectFrom('raw_work_parse_results')
+        .select('external_id')
+        .where('external_id', 'in', ids)
+        .execute();
+      const existingSet = new Set(existing.map((r) => r.external_id));
+      const before = ids.length;
+      ids = ids.filter((id) => !existingSet.has(id));
+      if (before !== ids.length) {
+        console.log(`Skipping ${before - ids.length} already-parsed books`);
+      }
+    }
+
+    if (ids.length === 0) {
+      console.log('All books already parsed. Nothing to do.');
+      await closeDb();
+      return;
+    }
+
+    // Step 1: Register to raw_list_items
+    await db
+      .insertInto('raw_list_items')
+      .values(
+        ids.map((id) => ({
+          platform: 'ridi' as const,
+          list_type: 'manual' as const,
+          external_id: id,
+          title: null,
+          author: null,
+        }))
+      )
+      .onConflict((oc) =>
+        oc.columns(['platform', 'external_id']).doUpdateSet(() => ({
+          crawled_at: sql`NOW()`,
+        }))
+      )
+      .execute();
+    console.log(`Registered ${ids.length} book(s) to raw_list_items\n`);
+
+    // Step 2: Crawl detail + parse
+    const crawler = new RidiCrawler();
+    const parser = new RidiParser();
+    await crawler.init();
+
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        console.log(`[${i + 1}/${ids.length}] Crawling ${id}...`);
+
+        try {
+          const result = await crawler.crawl({ externalId: id });
+          const pageId = await crawler.saveToDb(id, result);
+          const parsed = await parser.parseFromPage(crawler.getPage());
+          await parser.saveParseResult(pageId, id, parsed);
+          console.log(`  OK: ${parsed.title ?? id}`);
+          success++;
+        } catch (err) {
+          failed++;
+          console.error(`  FAIL: ${err instanceof Error ? err.message : err}`);
         }
 
-        await crawler.saveToDb({ genre, page: startPage, order }, collected);
-        console.log(`Genre ${genre}: Saved ${collected.length} items`);
-
-        if (genres.length > 1) {
+        if (i < ids.length - 1) {
           await new Promise((r) => setTimeout(r, 1000));
         }
       }
@@ -141,6 +267,8 @@ program
       await crawler.close();
       await closeDb();
     }
+
+    console.log(`\n=== Done: ${success} success, ${failed} failed ===`);
   });
 
 program
@@ -272,7 +400,7 @@ program
         console.log(`\nDry run: Would publish ${stats.unpublished} works`);
       } else {
         const result = await publisher.publishAll('ridi');
-        console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}`);
+        console.log(`\nPublished: ${result.published}, Skipped: ${result.skipped}, Deduped: ${result.deduped}`);
       }
     } finally {
       await closeDb();
@@ -285,13 +413,7 @@ program
   .requiredOption('-g, --genre <genre>', 'Genre code')
   .option('--pages <count>', 'Number of list pages', '1')
   .option('--limit <limit>', 'Limit detail crawls')
-  .option('--auth [path]', 'Path to auth storage state (uses default if no path given)')
   .action(async (options) => {
-    const storageStatePath = await resolveAuthPath(
-      typeof options.auth === 'string' ? options.auth : undefined,
-    );
-    if (storageStatePath) console.log(`Using auth: ${storageStatePath}`);
-
     console.log('=== Step 1: Crawl List ===');
     const listCrawler = new RidiListCrawler();
     await listCrawler.init({ storageStatePath });
@@ -299,9 +421,9 @@ program
     try {
       const pageCount = parseInt(options.pages, 10);
       for (let page = 1; page <= pageCount; page++) {
-        const result = await listCrawler.crawl({ genre: options.genre, page });
-        const items = listCrawler.parseListItems(result.html);
-        await listCrawler.saveToDb({ genre: options.genre, page }, items);
+        const result = await listCrawler.crawl({ genre: options.genre, page, contentType });
+        const items = listCrawler.parseListItems(result.html, contentType);
+        await listCrawler.saveToDb({ genre: options.genre, page, contentType }, items);
         console.log(`Page ${page}: ${items.length} items`);
         if (page < pageCount) await new Promise((r) => setTimeout(r, 1000));
       }
@@ -342,7 +464,7 @@ program
     console.log('\n=== Step 3: Publish ===');
     const publisher = new Publisher();
     const publishResult = await publisher.publishAll('ridi');
-    console.log(`Published: ${publishResult.published}, Skipped: ${publishResult.skipped}`);
+    console.log(`Published: ${publishResult.published}, Skipped: ${publishResult.skipped}, Deduped: ${publishResult.deduped}`);
 
     await closeDb();
     console.log('\n=== Pipeline Complete ===');

@@ -156,25 +156,48 @@ export class Publisher {
     return { workId, featuresAdded, isNew };
   }
 
-  async publishAll(platform: string): Promise<{ published: number; skipped: number }> {
+  async publishAll(platform: string): Promise<{ published: number; skipped: number; deduped: number }> {
     await this.ensureFeatures();
 
     const parseResults = await db
       .selectFrom('raw_work_parse_results')
       .innerJoin('raw_work_pages', 'raw_work_pages.id', 'raw_work_parse_results.raw_page_id')
-      .select('raw_work_parse_results.id')
+      .select([
+        'raw_work_parse_results.id',
+        'raw_work_parse_results.title',
+        'raw_work_parse_results.author',
+        'raw_work_parse_results.content_type',
+      ])
       .where('raw_work_pages.platform', '=', platform)
       .where('raw_work_parse_results.title', 'is not', null)
+      .orderBy(
+        db.case()
+          .when('raw_work_parse_results.content_type', 'is', null).then(0)
+          .when('raw_work_parse_results.content_type', '=', 'ebook').then(0)
+          .else(1)
+          .end()
+      )
       .execute();
 
     let published = 0;
     let skipped = 0;
+    let deduped = 0;
+    const publishedTitles = new Set<string>();
 
     for (const result of parseResults) {
+      const normalizedTitle = this.normalizeTitle(result.title ?? '');
+
+      if (result.content_type === 'webnovel' && normalizedTitle && publishedTitles.has(normalizedTitle)) {
+        console.log(`  Dedup: "${result.title}" (webnovel skipped, ebook exists)`);
+        deduped++;
+        continue;
+      }
+
       try {
         const publishResult = await this.publishWork(result.id);
         if (publishResult) {
           published++;
+          if (normalizedTitle) publishedTitles.add(normalizedTitle);
         } else {
           skipped++;
         }
@@ -184,7 +207,18 @@ export class Publisher {
       }
     }
 
-    return { published, skipped };
+    if (deduped > 0) {
+      console.log(`\nDeduplication: ${deduped} webnovel(s) skipped (ebook version exists)`);
+    }
+
+    return { published, skipped, deduped };
+  }
+
+  private normalizeTitle(title: string): string {
+    return title
+      .replace(/\s+/g, '')
+      .replace(/[~!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/g, '')
+      .toLowerCase();
   }
 
   async getPublishStats(platform: string): Promise<{
