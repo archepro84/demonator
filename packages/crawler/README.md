@@ -284,6 +284,34 @@ yarn crawl:list -g romance -o weekly --pages 3
 yarn crawl:list -g all -l 60
 ```
 
+### 지정 작품 크롤링
+
+```bash
+yarn dev crawl:books -i <id1> <id2> ... [-f <file>] [--skip-existing]
+```
+
+| 옵션 | 설명 |
+|------|------|
+| `-i, --ids <ids...>` | Book ID 목록 (공백 또는 쉼표 구분) |
+| `-f, --file <path>` | Book ID 파일 (한 줄에 하나, `#`으로 주석) |
+| `--skip-existing` | 이미 파싱된 작품 건너뛰기 |
+
+```bash
+# ID 직접 지정
+yarn dev crawl:books -i 102087141 6074000001 6074000002
+
+# 쉼표 구분
+yarn dev crawl:books -i 102087141,6074000001,6074000002
+
+# 파일로 지정
+yarn dev crawl:books -f book_ids.txt
+
+# 혼합 + 기존 건너뛰기
+yarn dev crawl:books -i 102087141 -f more_ids.txt --skip-existing
+```
+
+`raw_list_items`에 `list_type: 'manual'`로 등록 → 상세 크롤링 → 파싱까지 한 번에 실행한다. 랭킹 페이지를 거치지 않고 원하는 작품을 직접 추가할 때 사용.
+
 ### 작품 상세 크롤링
 
 ```bash

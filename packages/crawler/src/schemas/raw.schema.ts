@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const PlatformSchema = z.enum(['ridi']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
-export const ListTypeSchema = z.enum(['bestseller', 'new', 'genre']);
+export const ListTypeSchema = z.enum(['bestseller', 'new', 'genre', 'manual']);
 export type ListType = z.infer<typeof ListTypeSchema>;
 
 export const RawListItemSchema = z.object({

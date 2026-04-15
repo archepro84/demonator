@@ -8,6 +8,7 @@ import { RidiParser } from './crawlers/ridi/ridi.parser';
 import { ListValidator } from './validators/list-validator';
 import { Publisher } from './refiners/publisher';
 import { EnrichmentImportSchema } from './schemas/enrichment.schema';
+import { sql } from 'kysely';
 import { closeDb, db } from './database/kysely';
 
 const program = new Command();
@@ -95,6 +96,114 @@ program
       await crawler.close();
       await closeDb();
     }
+  });
+
+program
+  .command('crawl:books')
+  .description('Crawl specific books by ID list (registers to raw_list_items + crawl detail + parse)')
+  .option('-i, --ids <ids...>', 'Book IDs (space-separated)')
+  .option('-f, --file <path>', 'File with one book ID per line')
+  .option('--skip-existing', 'Skip books already parsed', false)
+  .action(async (options) => {
+    let ids: string[] = [];
+
+    if (options.ids) {
+      ids = options.ids.flatMap((id: string) => id.split(',').map((s: string) => s.trim()).filter(Boolean));
+    }
+
+    if (options.file) {
+      const content = await readFile(options.file, 'utf-8');
+      const fileIds = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'));
+      ids = ids.concat(fileIds);
+    }
+
+    ids = [...new Set(ids)];
+
+    if (ids.length === 0) {
+      console.error('No book IDs provided. Use -i or -f option.');
+      process.exit(1);
+    }
+
+    console.log(`\n=== Crawling ${ids.length} book(s) ===\n`);
+
+    if (options.skipExisting) {
+      const existing = await db
+        .selectFrom('raw_work_parse_results')
+        .select('external_id')
+        .where('external_id', 'in', ids)
+        .execute();
+      const existingSet = new Set(existing.map((r) => r.external_id));
+      const before = ids.length;
+      ids = ids.filter((id) => !existingSet.has(id));
+      if (before !== ids.length) {
+        console.log(`Skipping ${before - ids.length} already-parsed books`);
+      }
+    }
+
+    if (ids.length === 0) {
+      console.log('All books already parsed. Nothing to do.');
+      await closeDb();
+      return;
+    }
+
+    // Step 1: Register to raw_list_items
+    await db
+      .insertInto('raw_list_items')
+      .values(
+        ids.map((id) => ({
+          platform: 'ridi' as const,
+          list_type: 'manual' as const,
+          external_id: id,
+          title: null,
+          author: null,
+        }))
+      )
+      .onConflict((oc) =>
+        oc.columns(['platform', 'external_id']).doUpdateSet(() => ({
+          crawled_at: sql`NOW()`,
+        }))
+      )
+      .execute();
+    console.log(`Registered ${ids.length} book(s) to raw_list_items\n`);
+
+    // Step 2: Crawl detail + parse
+    const crawler = new RidiCrawler();
+    const parser = new RidiParser();
+    await crawler.init();
+
+    let success = 0;
+    let failed = 0;
+
+    try {
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        console.log(`[${i + 1}/${ids.length}] Crawling ${id}...`);
+
+        try {
+          const result = await crawler.crawl({ externalId: id });
+          const pageId = await crawler.saveToDb(id, result);
+          const parsed = await parser.parseFromPage(crawler.getPage());
+          await parser.saveParseResult(pageId, id, parsed);
+          console.log(`  OK: ${parsed.title ?? id}`);
+          success++;
+        } catch (err) {
+          failed++;
+          console.error(`  FAIL: ${err instanceof Error ? err.message : err}`);
+        }
+
+        if (i < ids.length - 1) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+    } finally {
+      await crawler.close();
+      await closeDb();
+    }
+
+    console.log(`\n=== Done: ${success} success, ${failed} failed ===`);
   });
 
 program
