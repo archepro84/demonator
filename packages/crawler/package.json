@@ -16,7 +16,9 @@
     "crawl:books": "tsx src/index.ts crawl:books",
     "validate": "tsx src/index.ts validate:list",
     "publish": "tsx src/index.ts publish",
-    "pipeline:books": "tsx src/index.ts pipeline:books"
+    "pipeline:books": "tsx src/index.ts pipeline:books",
+    "enrich:list": "tsx src/index.ts enrich:list",
+    "enrich:import": "tsx src/index.ts enrich:import"
   },
   "keywords": [
     "crawler",

@@ -32,13 +32,21 @@ async function migrate() {
     }),
   });
 
-  const { error, results } = await migrator.migrateToLatest();
+  const command = process.argv[2];
+
+  const { error, results } =
+    command === 'down'
+      ? await migrator.migrateDown()
+      : await migrator.migrateToLatest();
 
   results?.forEach((result) => {
+    const direction = command === 'down' ? 'Rolled back' : 'Executed';
     if (result.status === 'Success') {
-      console.log(`Migration "${result.migrationName}" executed successfully`);
+      console.log(`${direction} "${result.migrationName}" successfully`);
     } else if (result.status === 'Error') {
-      console.error(`Migration "${result.migrationName}" failed`);
+      console.error(`${direction} "${result.migrationName}" failed`);
+    } else if (result.status === 'NotExecuted') {
+      console.log(`"${result.migrationName}" was not executed`);
     }
   });
 
@@ -49,7 +57,7 @@ async function migrate() {
   }
 
   await db.destroy();
-  console.log('Migration completed');
+  console.log(command === 'down' ? 'Rollback completed' : 'Migration completed');
 }
 
 migrate();

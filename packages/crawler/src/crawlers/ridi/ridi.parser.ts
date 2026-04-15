@@ -71,6 +71,9 @@ export class RidiParser {
     return raw
       .replace(/\s*-\s*(?:리디|최신권|독점).*$/, '')
       .replace(/\s+\d+[권화]?\s*$/, '')
+      .replace(/\s*\((?:\d+세\s*)?개정판\)/g, '')
+      .replace(/\s*\(삽화본\)/g, '')
+      .replace(/\s*개정판\s*$/g, '')
       .trim();
   }
 
@@ -101,6 +104,8 @@ export class RidiParser {
   }
 
   private async extractKeywords(page: Page): Promise<string[]> {
+    const genreLabels = await this.extractBreadcrumbGenres(page);
+
     const buttons = page.locator('#ISLANDS__Keyword button[aria-label]');
     const count = await buttons.count();
     const tags: string[] = [];
@@ -110,7 +115,47 @@ export class RidiParser {
         tags.push(label.trim());
       }
     }
-    return tags;
+
+    const seen = new Set(tags.map((t) => t.toLowerCase()));
+    const prefix: string[] = [];
+    for (const g of genreLabels) {
+      if (!seen.has(g.toLowerCase())) {
+        prefix.push(g);
+        seen.add(g.toLowerCase());
+      }
+    }
+
+    return [...prefix, ...tags];
+  }
+
+  /**
+   * 브레드크럼에서 장르/상세장르 추출.
+   * e.g. "로판 웹소설" → "로판", "서양풍 로판" → "서양풍 로판"
+   */
+  private async extractBreadcrumbGenres(page: Page): Promise<string[]> {
+    const CONTENT_TYPE_RE = /\s*(웹소설|e북|ebook|웹툰|만화)\s*/gi;
+    const labels: string[] = [];
+
+    const links = page.locator('#ISLANDS__Header a[href*="/category/"]');
+    let count = await links.count();
+
+    if (count === 0) {
+      const breadcrumbLinks = page.locator('nav[aria-label="breadcrumb"] a, [class*="Breadcrumb"] a');
+      count = await breadcrumbLinks.count();
+      for (let i = 0; i < count; i++) {
+        const text = await breadcrumbLinks.nth(i).textContent().catch(() => null);
+        if (text?.trim()) labels.push(text.trim());
+      }
+    } else {
+      for (let i = 0; i < count; i++) {
+        const text = await links.nth(i).textContent().catch(() => null);
+        if (text?.trim()) labels.push(text.trim());
+      }
+    }
+
+    return labels
+      .map((l) => l.replace(CONTENT_TYPE_RE, '').trim())
+      .filter(Boolean);
   }
 
   private async extractIntroductionImages(page: Page): Promise<string[]> {
