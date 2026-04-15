@@ -18,7 +18,6 @@ export interface RawWorkPagesTable {
   platform: string;
   external_id: string;
   url: string;
-  html_content: string;
   crawled_at: Generated<Date>;
 }
 

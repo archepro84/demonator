@@ -36,7 +36,6 @@ export class RidiCrawler extends BaseCrawler {
       await db
         .updateTable('raw_work_pages')
         .set({
-          html_content: result.html,
           crawled_at: result.crawledAt,
         })
         .where('id', '=', existing.id)
@@ -52,7 +51,6 @@ export class RidiCrawler extends BaseCrawler {
         platform: 'ridi',
         external_id: externalId,
         url: result.url,
-        html_content: result.html,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
