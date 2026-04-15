@@ -1,5 +1,5 @@
 import type { Answer, GameSession } from '../../session/session.types';
-import type { WorkFeatureCache } from '../cache/work-feature.cache';
+import type { IWorkFeatureCache } from '../cache/work-feature.cache';
 
 type MultiplierFn = (confidence: number) => number;
 
@@ -17,7 +17,7 @@ export function updateScores(
   session: GameSession,
   featureId: number,
   answer: Answer,
-  cache: WorkFeatureCache,
+  cache: IWorkFeatureCache,
 ): void {
   const getMultiplier = MULTIPLIERS[answer];
 

@@ -20,8 +20,18 @@ export interface CachedFeature {
   questions: string[];
 }
 
+export interface IWorkFeatureCache {
+  getAllFeatures(): CachedFeature[];
+  getWork(workId: number): CachedWork | undefined;
+  getFeature(featureId: number): CachedFeature | undefined;
+  getAllWorkIds(): number[];
+  getAllFeatureIds(): number[];
+  getConfidence(workId: number, featureId: number): number;
+  getWorkFeatureMap(workId: number): Map<number, number> | undefined;
+}
+
 @Injectable()
-export class WorkFeatureCache implements OnModuleInit {
+export class WorkFeatureCache implements OnModuleInit, IWorkFeatureCache {
   private readonly logger = new Logger(WorkFeatureCache.name);
 
   private works: Map<number, CachedWork> = new Map();

@@ -8,21 +8,13 @@ import { closeDb } from './database/kysely';
 import { selectNextQuestion, selectTiebreakerQuestion, detectTiedCandidates, buildQuestionText } from './game/engine/question-selector';
 import { updateScores, getTopCandidates } from './game/engine/score-updater';
 import { DEFAULT_ABSENT } from './game/cache/work-feature.cache';
-import type { CachedWork, CachedFeature } from './game/cache/work-feature.cache';
+import type { IWorkFeatureCache, CachedWork, CachedFeature } from './game/cache/work-feature.cache';
 import type { Answer, GameSession } from './session/session.types';
 import { v4 as uuidv4 } from 'uuid';
 
 // ── Lightweight cache (no NestJS) ──
 
-interface CliCache {
-  getAllFeatures(): CachedFeature[];
-  getWork(id: number): CachedWork | undefined;
-  getFeature(id: number): CachedFeature | undefined;
-  getAllWorkIds(): number[];
-  getConfidence(workId: number, featureId: number): number;
-}
-
-async function loadCache(): Promise<CliCache> {
+async function loadCache(): Promise<IWorkFeatureCache> {
   const [workRows, featureRows, wfRows] = await Promise.all([
     db.selectFrom('works').selectAll().execute(),
     db.selectFrom('features').selectAll().execute(),
@@ -62,7 +54,9 @@ async function loadCache(): Promise<CliCache> {
     getWork: (id) => works.get(id),
     getFeature: (id) => features.get(id),
     getAllWorkIds: () => [...works.keys()],
+    getAllFeatureIds: () => [...features.keys()],
     getConfidence: (wId, fId) => confMap.get(wId)?.get(fId) ?? DEFAULT_ABSENT,
+    getWorkFeatureMap: (wId) => confMap.get(wId),
   };
 }
 
@@ -148,7 +142,7 @@ async function askYesNo(lr: LineReader): Promise<boolean | 'quit'> {
   }
 }
 
-function showTop(session: GameSession, cache: CliCache, n: number) {
+function showTop(session: GameSession, cache: IWorkFeatureCache, n: number) {
   const top = getTopCandidates(session, n);
   w(`${D}── 현재 상위 후보 ──${R}`);
   for (const c of top) {
@@ -174,7 +168,6 @@ async function main() {
 
   w(`${D}데이터 로딩 중...${R}`);
   const cache = await loadCache();
-  const engineCache = cache as any; // structurally compatible with WorkFeatureCache
 
   const totalWorks = cache.getAllWorkIds().length;
   const totalFeatures = cache.getAllFeatures().length;
@@ -190,7 +183,7 @@ async function main() {
   const lr = new LineReader();
 
   const session = createSession(cache.getAllWorkIds());
-  let feature: CachedFeature | null = selectNextQuestion(session, engineCache);
+  let feature: CachedFeature | null = selectNextQuestion(session, cache);
   if (!feature) {
     w(`${RE}피처 데이터가 없어 게임을 시작할 수 없습니다.${R}`);
     lr.close(); await closeDb(); return;
@@ -209,7 +202,7 @@ async function main() {
       const ans = await askAnswer(lr);
       if (ans === 'quit') break gameLoop;
 
-      updateScores(session, session.pendingFeatureId, ans, engineCache);
+      updateScores(session, session.pendingFeatureId, ans, cache);
       session.pendingFeatureId = null;
 
       showTop(session, cache, 3);
@@ -226,7 +219,7 @@ async function main() {
       if (top3Concentrated) {
         const tiedIds = detectTiedCandidates(top);
         if (tiedIds) {
-          const tb = selectTiebreakerQuestion(session, engineCache, tiedIds);
+          const tb = selectTiebreakerQuestion(session, cache, tiedIds);
           if (tb) {
             w(`${D}  ⚡ 상위 후보 동률 → 핵심 질문${R}`);
             session.pendingFeatureId = tb.id;
@@ -236,7 +229,7 @@ async function main() {
         session.status = 'guessing'; break;
       }
 
-      const next = selectNextQuestion(session, engineCache);
+      const next = selectNextQuestion(session, cache);
       if (!next) { session.status = 'guessing'; break; }
       session.pendingFeatureId = next.id;
     }
@@ -299,7 +292,7 @@ async function main() {
       blank();
 
       if (session.questionCount < MAX_Q) {
-        const nf = selectNextQuestion(session, engineCache);
+        const nf = selectNextQuestion(session, cache);
         if (nf) {
           session.pendingFeatureId = nf.id;
           session.status = 'playing';

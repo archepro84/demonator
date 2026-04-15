@@ -1,5 +1,5 @@
 import type { GameSession } from '../../session/session.types';
-import type { WorkFeatureCache, CachedFeature } from '../cache/work-feature.cache';
+import type { IWorkFeatureCache, CachedFeature } from '../cache/work-feature.cache';
 import type { RankedWork } from './score-updater';
 
 const PHASE_WEIGHTS: Record<string, number>[] = [
@@ -33,7 +33,7 @@ const TIE_RATIO = 0.15;
  */
 export function selectNextQuestion(
   session: GameSession,
-  cache: WorkFeatureCache,
+  cache: IWorkFeatureCache,
 ): CachedFeature | null {
   const allFeatures = cache.getAllFeatures();
   const candidates = allFeatures.filter(
@@ -106,7 +106,7 @@ export function detectTiedCandidates(
  */
 export function selectTiebreakerQuestion(
   session: GameSession,
-  cache: WorkFeatureCache,
+  cache: IWorkFeatureCache,
   tiedWorkIds: number[],
 ): CachedFeature | null {
   const allFeatures = cache.getAllFeatures();
